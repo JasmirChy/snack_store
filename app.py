@@ -809,7 +809,14 @@ def admin_order_detail(order_id):
     
     # Get order items
     cur.execute("""
-        SELECT oi.*, p.title, p.image 
+        SELECT 
+            oi.id,
+            oi.order_id,
+            oi.product_id,
+            oi.quantity,
+            oi.unit_price,
+            p.title as product_name,
+            p.image as product_image
         FROM order_items oi 
         JOIN products p ON oi.product_id = p.id 
         WHERE oi.order_id = %s

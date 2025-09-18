@@ -96,40 +96,56 @@
                 </div>
             </div>
             
-            <!-- Payment Proof (if online payment) -->
+           <!-- Payment Proof (if online payment) -->
             {% if order[3] == 'online' and order[4] %}
             <div class="mt-6">
                 <h3 class="font-semibold mb-3">Payment Proof</h3>
-                <img src="{{ url_for('static', filename='uploads/payment_proofs/' + order[4]) }}" alt="Payment Proof" class="w-full rounded-md shadow-md">
+                <img src="{{ url_for('static', filename='uploads/payment_proofs/' + order[4]) }}" 
+                    alt="Payment Proof" class="w-64 h-64 object-contain rounded-md border">
             </div>
             {% endif %}
         </div>
         
-        <!-- Order Items -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-semibold mb-4">Order Items</h2>
-            
-            {% for item in order_items %}
-            <div class="flex justify-between items-center mb-4 pb-4 border-b border-gray-200">
-                <div class="flex items-center">
-                    <img src="{{ url_for('static', filename='uploads/products/' + item[7]) if item[7] else 'https://via.placeholder.com/60' }}" alt="{{ item[6] }}" class="w-16 h-16 object-cover rounded-md mr-4">
-                    <div>
-                        <h3 class="font-semibold">{{ item[6] }}</h3>
-                        <p class="text-gray-600">Qty: {{ item[3] }}</p>
-                        <p class="text-gray-600">Price: {{ format_currency(item[4]) }} each</p>
-                    </div>
-                </div>
-                <div class="font-semibold">{{ format_currency(item[4] * item[3]) }}</div>
-            </div>
-            {% endfor %}
-            
-            <div class="mt-4 border-t border-gray-200 pt-4">
-                <div class="flex justify-between items-center text-xl font-semibold">
-                    <span>Total:</span>
-                    <span>{{ format_currency(order[1]) }}</span>
-                </div>
-            </div>
-        </div>
+ <!-- Order Items -->
+<div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-semibold mb-4">Order Items</h2>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="bg-gray-100">
+                    <th class="px-4 py-2 text-left">Product Image</th>
+                    <th class="px-4 py-2 text-left">Product Name</th>
+                    <th class="px-4 py-2 text-center">Quantity</th>
+                    <th class="px-4 py-2 text-center">Unit Price</th>
+                    <th class="px-4 py-2 text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order_items %}
+                <tr class="border-b border-gray-200">
+                    <td class="px-4 py-3">
+                        <img src="{{ url_for('static', filename='uploads/products/' + item[6]) if item[6] else 'https://via.placeholder.com/60' }}" 
+                             alt="{{ item[5] }}" class="w-16 h-16 object-cover rounded-md">
+                    </td>
+                    <td class="px-4 py-3">
+                        <h3 class="font-semibold">{{ item[5] }}</h3>  <!-- Product Name -->
+                    </td>
+                    <td class="px-4 py-3 text-center">{{ item[3] }}</td>  <!-- Quantity -->
+                    <td class="px-4 py-3 text-center">{{ format_currency(item[4]) }}</td>  <!-- Unit Price -->
+                    <td class="px-4 py-3 text-right font-semibold">{{ format_currency(item[4] * item[3]) }}</td>  <!-- Total -->
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="4" class="px-4 py-3 text-right font-semibold border-t border-gray-200">Grand Total:</td>
+                    <td class="px-4 py-3 text-right font-semibold text-lg border-t border-gray-200">{{ format_currency(order[1]) }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
     </div>
 </div>
 {% endblock %}
