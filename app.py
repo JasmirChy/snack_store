@@ -571,6 +571,40 @@ def admin_dashboard():
                          recent_orders=recent_orders,
                          active_banner=active_banner)
 
+@app.route('/buy_now', methods=['POST'])
+@login_required
+def buy_now():
+    # Prevent admin users from purchasing
+    if current_user.is_admin:
+        flash('Admin users cannot purchase products', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
+    product_id = request.form.get('product_id')
+    quantity = int(request.form.get('quantity', 1))
+    
+    cur = mysql.connection.cursor()
+    
+    # Check if product exists and has stock
+    cur.execute("SELECT * FROM products WHERE id = %s AND stock >= %s", (product_id, quantity))
+    product = cur.fetchone()
+    
+    if not product:
+        flash('Product not available in the requested quantity', 'error')
+        return redirect(request.referrer)
+    
+    # Clear existing cart items for this user
+    cur.execute("DELETE FROM cart_items WHERE user_id = %s", (current_user.id,))
+    
+    # Add the product to cart
+    cur.execute("INSERT INTO cart_items (user_id, product_id, quantity) VALUES (%s, %s, %s)", 
+               (current_user.id, product_id, quantity))
+    
+    mysql.connection.commit()
+    cur.close()
+    
+    # Redirect directly to checkout
+    return redirect(url_for('checkout'))
+
 @app.route('/admin/products')
 @login_required
 def admin_products():

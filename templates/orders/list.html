@@ -11,7 +11,7 @@
             <div class="bg-gray-100 p-4 flex justify-between items-center">
                 <div>
                     <span class="font-semibold">Order #{{ order[0] }}</span>
-                    <span class="text-gray-600 text-sm ml-4">{{ order[7] | format_date }}</span>
+                   
                 </div>
                 <div>
                     <span class="px-3 py-1 rounded-full text-xs font-semibold 
@@ -26,6 +26,7 @@
             </div>
             
             <div class="p-4">
+                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <h3 class="font-semibold">Shipping Address</h3>
@@ -38,6 +39,23 @@
                             {% if order[4] == 'cod' %}Cash on Delivery{% else %}Online Payment{% endif %}
                         </p>
                         <p class="font-semibold mt-2">Total: {{ format_currency(order[2]) }}</p>
+                        
+                        {% if order[6] %}
+                        <p class="text-gray-600 mt-2">
+                            <strong> Current Status:</strong> {{ order[6] }}
+                        </p>
+                        {% endif %}
+                        
+                        <!-- Try to find the date in common indices -->
+                        <p class="text-gray-600 mt-2">
+                            <strong>Order Date:</strong> 
+                            {% if order[7] %}{{ order[7] | format_date }}
+                            {% elif order[8] %}{{ order[8] | format_date }}
+                            {% elif order[9] %}{{ order[9] | format_date }}
+                            {% elif order[10] %}{{ order[10] | format_date }}
+                            {% elif order[11] %}{{ order[11] | format_date }}
+                            {% else %}Date not found{% endif %}
+                        </p>
                     </div>
                 </div>
                 
@@ -80,4 +98,22 @@
     </div>
     {% endif %}
 </div>
+
+<!-- JavaScript to help identify the date index -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Look for date patterns in the debug text
+    const debugText = document.querySelectorAll('.bg-gray-100 .text-xs');
+    debugText.forEach(el => {
+        console.log('Debug info:', el.textContent);
+        
+        // Look for date patterns (YYYY-MM-DD or similar)
+        const text = el.textContent;
+        const dateMatch = text.match(/(\d{4}[-/]\d{2}[-/]\d{2})|(\d{2}[-/]\d{2}[-/]\d{4})/);
+        if (dateMatch) {
+            console.log('Found date pattern:', dateMatch[0]);
+        }
+    });
+});
+</script>
 {% endblock %}

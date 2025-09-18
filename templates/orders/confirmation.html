@@ -53,13 +53,13 @@
                 {% for item in order_items %}
                 <div class="flex justify-between items-center mb-2">
                     <div>{{ item[7] }} x {{ item[3] }}</div>
-                    <div>${{ "%.2f"|format(item[4] * item[3]) }}</div>
+                    <div>रु{{ "%.2f"|format(item[4] * item[3]) }}</div>
                 </div>
                 {% endfor %}
                 
                 <div class="border-t border-gray-300 mt-4 pt-4 font-semibold flex justify-between">
                     <span>Total:</span>
-                    <span>${{ "%.2f"|format(order[2]) }}</span>
+                    <span>रु{{ "%.2f"|format(order[2]) }}</span>
                 </div>
             </div>
         </div>

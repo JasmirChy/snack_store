@@ -9,7 +9,7 @@
             </div>
             <div class="md:w-1/2 p-6">
                 <h1 class="text-3xl font-bold mb-4">{{ product[2] }}</h1>
-                <p class="text-primary font-bold text-2xl mb-4">रु{{ "%.2f"|format(product[4]) }}</p>
+                <p class="text-primary font-bold text-2xl mb-4">{{ format_currency(product[4]) }}</p>
                 <p class="text-gray-600 mb-6">{{ product[3] }}</p>
                 
                 <div class="mb-6">
@@ -22,22 +22,40 @@
                 </div>
                 
                 {% if product[5] > 0 %}
-                <form action="{{ url_for('add_to_cart') }}" method="POST" class="mb-4">
-                    <input type="hidden" name="product_id" value="{{ product[0] }}">
-                    <div class="flex items-center mb-4">
-                        <label for="quantity" class="mr-4 text-gray-700">Quantity:</label>
-                        <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ product[5] }}" 
-                               class="w-20 px-3 py-2 border border-gray-300 rounded-md">
+                <!-- Replace the quantity section with this enhanced version -->
+                    <div class="mb-6">
+                        <label class="block text-gray-700 mb-2">Quantity:</label>
+                        <div class="flex items-center">
+                          
+                            
+                            <!-- Quantity Input -->
+                            <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ product[5] }}" 
+                                class="w-20 px-3 py-2 border-t border-b border-gray-300 text-center focus:outline-none focus:ring-2 focus:ring-primary font-semibold">
+                            
+                        
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1">Max: {{ product[5] }} available</p>
                     </div>
-                    <div class="flex space-x-4">
-                        <button type="submit" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition duration-300">
+                
+                <div class="flex space-x-4">
+                    <!-- Add to Cart Form -->
+                    <form action="{{ url_for('add_to_cart') }}" method="POST" class="inline">
+                        <input type="hidden" name="product_id" value="{{ product[0] }}">
+                        <input type="hidden" name="quantity" value="1" id="cartQuantity">
+                        <button type="button" onclick="updateCartQuantity()" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition duration-300">
                             Add to Cart
                         </button>
-                        <a href="{{ url_for('checkout') }}" class="bg-secondary hover:bg-green-700 text-white font-bold py-2 px-6 rounded-md transition duration-300">
+                    </form>
+                    
+                    <!-- Buy Now Form -->
+                    <form action="{{ url_for('buy_now') }}" method="POST" class="inline">
+                        <input type="hidden" name="product_id" value="{{ product[0] }}">
+                        <input type="hidden" name="quantity" value="1" id="buyNowQuantity">
+                        <button type="button" onclick="updateBuyNowQuantity()" class="bg-secondary hover:bg-green-700 text-white font-bold py-2 px-6 rounded-md transition duration-300">
                             Buy Now
-                        </a>
-                    </div>
-                </form>
+                        </button>
+                    </form>
+                </div>
                 {% endif %}
                 
                 <div class="border-t border-gray-200 pt-4">
@@ -53,4 +71,19 @@
         </div>
     </div>
 </div>
+
+<!-- Simple JavaScript to update quantity before form submission -->
+<script>
+function updateCartQuantity() {
+    const quantity = document.getElementById('quantity').value;
+    document.getElementById('cartQuantity').value = quantity;
+    document.querySelector('form[action="{{ url_for("add_to_cart") }}"]').submit();
+}
+
+function updateBuyNowQuantity() {
+    const quantity = document.getElementById('quantity').value;
+    document.getElementById('buyNowQuantity').value = quantity;
+    document.querySelector('form[action="{{ url_for("buy_now") }}"]').submit();
+}
+</script>
 {% endblock %}
