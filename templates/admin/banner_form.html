@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <h1 class="text-3xl font-bold mb-6">{{ 'Edit' if banner else 'Add' }} Banner</h1>
+    
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <form method="POST" action="{{ url_for('admin_edit_banner', banner_id=banner[0]) if banner else url_for('admin_add_banner') }}" enctype="multipart/form-data">
+            <div class="mb-4">
+                <label for="title" class="block text-gray-700 mb-2">Banner Title *</label>
+                <input type="text" id="title" name="title" value="{{ banner[1] if banner else '' }}" required 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Main Image -->
+                <div>
+                    <label for="image" class="block text-gray-700 mb-2">Banner Image *</label>
+                    <input type="file" id="image" name="image" accept="image/*" {% if not banner %}required{% endif %}
+                           class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                    
+                    {% if banner and banner[2] %}
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-600">Current image:</p>
+                        <img src="{{ url_for('static', filename='uploads/banners/' + banner[2]) }}" alt="{{ banner[1] }}" class="w-32 h-20 object-cover rounded-md mt-2">
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Background Image -->
+                <div>
+                    <label for="background_image" class="block text-gray-700 mb-2">Background Image (Optional)</label>
+                    <input type="file" id="background_image" name="background_image" accept="image/*"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                    
+                    {% if banner and banner[5] %}
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-600">Current background:</p>
+                        <img src="{{ url_for('static', filename='uploads/banners/' + banner[5]) }}" alt="Background" class="w-32 h-20 object-cover rounded-md mt-2">
+                        <div class="mt-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="remove_background" value="true" class="mr-2">
+                                <span class="text-sm text-red-600">Remove background image</span>
+                            </label>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <div class="flex items-center">
+                    <input type="checkbox" id="active" name="active" value="true" {% if banner and banner[3] %}checked{% endif %} class="mr-2">
+                    <label for="active" class="text-gray-700">Set as active banner</label>
+                </div>
+                <p class="text-sm text-gray-600 mt-1">Only one banner can be active at a time. Setting this as active will deactivate other banners.</p>
+            </div>
+            
+            <div class="flex justify-end">
+                <a href="{{ url_for('admin_banners') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-md mr-3 transition duration-300">
+                    Cancel
+                </a>
+                <button type="submit" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300">
+                    {{ 'Update' if banner else 'Add' }} Banner
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    {% if banner and banner[5] %}
+    {% set bg_image_url = url_for('static', filename='uploads/banners/' + banner[5]) %}
+    <div class="mt-6 bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold mb-4">Preview with Background</h2>
+        <div class="relative w-full h-64 rounded-lg overflow-hidden bg-gray-200">
+            <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ bg_image_url }}');"></div>
+            <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                {% if banner and banner[2] %}
+                <img src="{{ url_for('static', filename='uploads/banners/' + banner[2]) }}" alt="{{ banner[1] }}" class="max-w-full max-h-48 object-contain">
+                {% endif %}
+            </div>
+            <div class="absolute bottom-4 left-4 text-white">
+                <h3 class="text-xl font-bold">{{ banner[1] }}</h3>
+            </div>
+        </div>
+        <p class="text-sm text-gray-600 mt-2">This is how your banner will appear on the homepage with the background image.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

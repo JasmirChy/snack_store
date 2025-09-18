@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Order History</h1>
+    
+    {% if orders %}
+    <div class="space-y-6">
+        {% for order in orders %}
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="bg-gray-100 p-4 flex justify-between items-center">
+                <div>
+                    <span class="font-semibold">Order #{{ order[0] }}</span>
+                    <span class="text-gray-600 text-sm ml-4">{{ order[7] | format_date }}</span>
+                </div>
+                <div>
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold 
+                        {% if order[5] == 'pending' %}bg-yellow-100 text-yellow-800
+                        {% elif order[5] == 'processing' %}bg-blue-100 text-blue-800
+                        {% elif order[5] == 'shipped' %}bg-indigo-100 text-indigo-800
+                        {% elif order[5] == 'delivered' %}bg-green-100 text-green-800
+                        {% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ order[5]|title }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="p-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <h3 class="font-semibold">Shipping Address</h3>
+                        <p class="text-gray-600 whitespace-pre-line">{{ order[3] }}</p>
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-semibold">Payment Method</h3>
+                        <p class="text-gray-600">
+                            {% if order[4] == 'cod' %}Cash on Delivery{% else %}Online Payment{% endif %}
+                        </p>
+                        <p class="font-semibold mt-2">Total: {{ format_currency(order[2]) }}</p>
+                    </div>
+                </div>
+                
+                <h3 class="font-semibold mb-2">Order Items</h3>
+                <div class="border border-gray-200 rounded-md">
+                    {% for item in order_items[order[0]] %}
+                    <div class="grid grid-cols-12 gap-4 p-3 border-b border-gray-200 last:border-b-0">
+                        <div class="col-span-2">
+                            <img src="{{ url_for('static', filename='uploads/products/' + item[6]) if item[6] else 'https://via.placeholder.com/60' }}" alt="{{ item[5] }}" class="w-16 h-16 object-cover rounded-md">
+                        </div>
+                        <div class="col-span-6">
+                            <h4 class="font-semibold">{{ item[5] }}</h4>
+                            <p class="text-gray-600">Qty: {{ item[3] }}</p>
+                        </div>
+                        <div class="col-span-4 text-right">
+                            <p class="font-semibold">{{ format_currency(item[4] * item[3]) }}</p>
+                            <p class="text-gray-600 text-sm">{{ format_currency(item[4]) }} each</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if order[4] == 'online' and order[6] and order[5] == 'pending' %}
+                <div class="mt-4 p-3 bg-yellow-50 rounded-md">
+                    <p class="text-yellow-800">Waiting for payment verification. You uploaded proof on {{ order[7] | format_date('%B %d, %Y') }}.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white rounded-lg shadow-md p-8 text-center">
+        <i class="fas fa-box-open text-5xl text-gray-300 mb-4"></i>
+        <h2 class="text-2xl font-bold mb-4">No orders yet</h2>
+        <p class="text-gray-600 mb-6">You haven't placed any orders yet.</p>
+        <a href="{{ url_for('products') }}" class="bg-primary hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md transition duration-300">
+            Start Shopping
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

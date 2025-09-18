@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="md:flex">
+            <div class="md:w-1/2">
+                <img src="{{ url_for('static', filename='uploads/products/' + product[6]) if product[6] else 'https://via.placeholder.com/500' }}" alt="{{ product[2] }}" class="w-full h-96 object-cover">
+            </div>
+            <div class="md:w-1/2 p-6">
+                <h1 class="text-3xl font-bold mb-4">{{ product[2] }}</h1>
+                <p class="text-primary font-bold text-2xl mb-4">रु{{ "%.2f"|format(product[4]) }}</p>
+                <p class="text-gray-600 mb-6">{{ product[3] }}</p>
+                
+                <div class="mb-6">
+                    <span class="text-gray-700">Availability:</span>
+                    {% if product[5] > 0 %}
+                    <span class="text-green-600 font-semibold">In Stock ({{ product[5] }} available)</span>
+                    {% else %}
+                    <span class="text-red-600 font-semibold">Out of Stock</span>
+                    {% endif %}
+                </div>
+                
+                {% if product[5] > 0 %}
+                <form action="{{ url_for('add_to_cart') }}" method="POST" class="mb-4">
+                    <input type="hidden" name="product_id" value="{{ product[0] }}">
+                    <div class="flex items-center mb-4">
+                        <label for="quantity" class="mr-4 text-gray-700">Quantity:</label>
+                        <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ product[5] }}" 
+                               class="w-20 px-3 py-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div class="flex space-x-4">
+                        <button type="submit" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition duration-300">
+                            Add to Cart
+                        </button>
+                        <a href="{{ url_for('checkout') }}" class="bg-secondary hover:bg-green-700 text-white font-bold py-2 px-6 rounded-md transition duration-300">
+                            Buy Now
+                        </a>
+                    </div>
+                </form>
+                {% endif %}
+                
+                <div class="border-t border-gray-200 pt-4">
+                    <p class="text-gray-600">Category: 
+                        {% for category in categories %}
+                            {% if category[0] == product[1] %}
+                                {{ category[1] }}
+                            {% endif %}
+                        {% endfor %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

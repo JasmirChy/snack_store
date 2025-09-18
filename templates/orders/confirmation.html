@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-md p-6 text-center">
+        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-check text-green-600 text-2xl"></i>
+        </div>
+        
+        <h1 class="text-3xl font-bold mb-4">Order Confirmed!</h1>
+        <p class="text-gray-600 mb-6">Thank you for your order. Your order number is: <span class="font-semibold">#{{ order[0] }}</span></p>
+        
+        <div class="bg-gray-100 rounded-lg p-6 mb-6 text-left">
+            <h2 class="text-xl font-semibold mb-4">Order Details</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <h3 class="font-semibold">Shipping Address</h3>
+                    <p class="text-gray-600 whitespace-pre-line">{{ order[3] }}</p>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold">Payment Method</h3>
+                    <p class="text-gray-600">
+                        {% if order[4] == 'cod' %}Cash on Delivery{% else %}Online Payment{% endif %}
+                    </p>
+                    
+                    {% if order[4] == 'online' %}
+                    <div class="mt-4">
+                        <h3 class="font-semibold">Payment Instructions</h3>
+                        <p class="text-gray-600 mb-2">Please make payment to the following QR code and upload the screenshot:</p>
+                        
+                        <div class="flex flex-col items-center">
+                            <img src="{{ url_for('static', filename='uploads/payment_qr/' + qr_setting[2]) if qr_setting and qr_setting[2] else 'https://via.placeholder.com/150' }}" alt="Payment QR Code" class="w-32 h-32 mb-2">
+                            
+                            <form action="{{ url_for('upload_payment_proof', order_id=order[0]) }}" method="POST" enctype="multipart/form-data" class="mt-2">
+                                <div class="flex flex-col items-center">
+                                    <input type="file" name="payment_proof" required 
+                                           class="mb-2 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-blue-700">
+                                    <button type="submit" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md text-sm transition duration-300">
+                                        Upload Payment Proof
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <h3 class="font-semibold mb-2">Order Items</h3>
+                {% for item in order_items %}
+                <div class="flex justify-between items-center mb-2">
+                    <div>{{ item[7] }} x {{ item[3] }}</div>
+                    <div>${{ "%.2f"|format(item[4] * item[3]) }}</div>
+                </div>
+                {% endfor %}
+                
+                <div class="border-t border-gray-300 mt-4 pt-4 font-semibold flex justify-between">
+                    <span>Total:</span>
+                    <span>${{ "%.2f"|format(order[2]) }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+            <a href="{{ url_for('orders') }}" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-6 rounded-md transition duration-300">
+                View Order History
+            </a>
+            <a href="{{ url_for('products') }}" class="bg-primary hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md transition duration-300">
+                Continue Shopping
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

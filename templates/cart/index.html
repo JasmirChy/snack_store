@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Shopping Cart</h1>
+    
+    {% if cart_items %}
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="hidden md:grid grid-cols-12 gap-4 bg-gray-100 p-4 font-semibold">
+            <div class="col-span-5">Product</div>
+            <div class="col-span-2 text-center">Price</div>
+            <div class="col-span-2 text-center">Quantity</div>
+            <div class="col-span-2 text-center">Total</div>
+            <div class="col-span-1 text-center">Action</div>
+        </div>
+        
+        {% for item in cart_items %}
+        <div class="grid grid-cols-12 gap-4 p-4 border-b border-gray-200 items-center">
+            <div class="col-span-12 md:col-span-5 flex items-center">
+                <img src="{{ url_for('static', filename='uploads/products/' + item[4]) if item[4] else 'https://via.placeholder.com/80' }}" alt="{{ item[2] }}" class="w-16 h-16 object-cover rounded-md mr-4">
+                <div>
+                    <h3 class="font-semibold">{{ item[2] }}</h3>
+                </div>
+            </div>
+            
+            <div class="col-span-4 md:col-span-2 text-center">
+                <span class="md:hidden font-semibold">Price: </span>
+                रु{{ "%.2f"|format(item[3]) }}
+            </div>
+            
+            <div class="col-span-4 md:col-span-2 text-center">
+                <span class="md:hidden font-semibold">Qty: </span>
+                <form action="{{ url_for('update_cart') }}" method="POST" class="flex items-center justify-center">
+                    <input type="hidden" name="cart_item_id" value="{{ item[0] }}">
+                    <input type="number" name="quantity" value="{{ item[5] }}" min="1" class="w-16 px-2 py-1 border border-gray-300 rounded-md text-center">
+                    <button type="submit" class="ml-2 text-primary hover:text-blue-700">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </form>
+            </div>
+            
+            <div class="col-span-4 md:col-span-2 text-center">
+                <span class="md:hidden font-semibold">Total: </span>
+                रु{{ "%.2f"|format(item[6]) }}
+            </div>
+            
+            <div class="col-span-12 md:col-span-1 text-center mt-4 md:mt-0">
+                <form action="{{ url_for('update_cart') }}" method="POST">
+                    <input type="hidden" name="cart_item_id" value="{{ item[0] }}">
+                    <input type="hidden" name="quantity" value="0">
+                    <button type="submit" class="text-red-500 hover:text-red-700">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <div class="p-4 border-t border-gray-200">
+            <div class="flex justify-between items-center">
+                <div class="text-xl font-semibold">Total: रु{{ "%.2f"|format(grand_total) }}</div>
+                <a href="{{ url_for('checkout') }}" class="bg-primary hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md transition duration-300">
+                    Proceed to Checkout
+                </a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-white rounded-lg shadow-md p-8 text-center">
+        <i class="fas fa-shopping-cart text-5xl text-gray-300 mb-4"></i>
+        <h2 class="text-2xl font-bold mb-4">Your cart is empty</h2>
+        <p class="text-gray-600 mb-6">Looks like you haven't added any items to your cart yet.</p>
+        <a href="{{ url_for('products') }}" class="bg-primary hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md transition duration-300">
+            Continue Shopping
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
