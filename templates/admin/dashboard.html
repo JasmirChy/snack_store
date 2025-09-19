@@ -6,7 +6,7 @@
     
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="bg-[#fffae1] rounded-lg shadow-md p-6">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
                     <i class="fas fa-shopping-cart text-xl"></i>
@@ -18,7 +18,7 @@
             </div>
         </div>
         
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="bg-[#fffae1] rounded-lg shadow-md p-6">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
                     <i class="fas fa-box text-xl"></i>
@@ -30,7 +30,7 @@
             </div>
         </div>
         
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="bg-[#fffae1] rounded-lg shadow-md p-6">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
                     <i class="fas fa-users text-xl"></i>
@@ -42,7 +42,7 @@
             </div>
         </div>
         
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="bg-[#fffae1] rounded-lg shadow-md p-6">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">
                     <i class="fas fa-clock text-xl"></i>
@@ -85,14 +85,14 @@
     </div> -->
     
     <!-- Recent Orders -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+    <div class="bg-[#fffae1] rounded-lg shadow-md p-6 mb-8">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-semibold">Recent Orders</h2>
             <a href="{{ url_for('admin_orders') }}" class="text-primary hover:underline">View all orders</a>
         </div>
         
         <div class="overflow-x-auto">
-            <table class="w-full">
+            <table class="w-full bg-[#cccccc]">
                 <thead>
                     <tr class="bg-gray-100">
                         <th class="px-4 py-2 text-left">Order ID</th>
@@ -138,7 +138,7 @@
     
     <!-- Quick Actions -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <a href="{{ url_for('admin_products') }}" class="bg-white rounded-lg shadow-md p-6 text-center hover:shadow-lg transition duration-300">
+        <a href="{{ url_for('admin_products') }}" class="bg-[#fffae1] rounded-lg shadow-md p-6 text-center hover:shadow-lg transition duration-300">
             <div class="p-3 rounded-full bg-blue-100 text-blue-600 inline-block mb-4">
                 <i class="fas fa-box text-2xl"></i>
             </div>
@@ -147,7 +147,7 @@
         </a>
         
 
-        <a href="{{ url_for('admin_orders') }}" class="bg-white rounded-lg shadow-md p-6 text-center hover:shadow-lg transition duration-300">
+        <a href="{{ url_for('admin_orders') }}" class="bg-[#fffae1] rounded-lg shadow-md p-6 text-center hover:shadow-lg transition duration-300">
             <div class="p-3 rounded-full bg-green-100 text-green-600 inline-block mb-4">
                 <i class="fas fa-shopping-cart text-2xl"></i>
             </div>
@@ -155,7 +155,7 @@
             <p class="text-gray-600 text-sm mt-2">{{ total_orders }} orders</p>
         </a>
         
-        <a href="{{ url_for('admin_users') }}" class="bg-white rounded-lg shadow-md p-6 text-center hover:shadow-lg transition duration-300">
+        <a href="{{ url_for('admin_users') }}" class="bg-[#fffae1] rounded-lg shadow-md p-6 text-center hover:shadow-lg transition duration-300">
             <div class="p-3 rounded-full bg-purple-100 text-purple-600 inline-block mb-4">
                 <i class="fas fa-users text-2xl"></i>
             </div>
@@ -164,18 +164,18 @@
         </a>
         
        
-        <!-- <a href="{{ url_for('admin_banners') }}" class="bg-white rounded-lg shadow-md p-6 text-center hover:shadow-lg transition duration-300">
+        <a href="{{ url_for('admin_slider') }}" class="bg-[#fffae1] rounded-lg shadow-md p-6 text-center hover:shadow-lg transition duration-300">
             <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 inline-block mb-4">
                 <i class="fas fa-image text-2xl"></i>
             </div>
-            <h3 class="font-semibold">Manage Banners</h3>
-            <p class="text-gray-600 text-sm mt-2">Homepage promotion</p>
-        </a> -->
+            <h3 class="font-semibold">Manage Slides</h3>
+            <!-- <p class="text-gray-600 text-sm mt-2">Homepage promotion</p> -->
+        </a>
 
         <!-- <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"> -->
             <!-- Existing cards... -->
             
-            <a href="{{ url_for('admin_settings') }}" class="bg-white rounded-lg shadow-md p-6 text-center hover:shadow-lg transition duration-300">
+            <a href="{{ url_for('admin_settings') }}" class="bg-[#fffae1] rounded-lg shadow-md p-6 text-center hover:shadow-lg transition duration-300">
                 <div class="p-3 rounded-full bg-gray-100 text-gray-600 inline-block mb-4">
                     <i class="fas fa-cog text-2xl"></i>
                 </div>

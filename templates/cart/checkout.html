@@ -6,7 +6,7 @@
     
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <!-- Order Summary -->
-        <div class="bg-white rounded-lg shadow-md p-6 h-fit">
+        <div class="bg-[#fffae1] rounded-lg shadow-md p-6 h-fit">
             <h2 class="text-xl font-semibold mb-4">Order Summary</h2>
             
             {% for item in cart_items %}
@@ -31,7 +31,7 @@
         </div>
         
         <!-- Checkout Form -->
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="bg-[#fffae1] rounded-lg shadow-md p-6">
             <h2 class="text-xl font-semibold mb-4">Shipping Information</h2>
             
             <form method="POST" action="{{ url_for('checkout') }}">

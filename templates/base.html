@@ -30,9 +30,9 @@
     }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-[#fff5ca]">
     <!-- Header -->
-    <header class="sticky top-0 z-50 bg-white shadow-md">
+    <header class="sticky top-0 z-50 bg-[#fff5ca] shadow-md">
         <div class="container mx-auto px-4 py-3">
             <div class="flex items-center justify-between">
                 <!-- Logo -->
@@ -51,7 +51,7 @@
                             Categories
                             <i class="fas fa-chevron-down ml-1 text-xs"></i>
                         </button>
-                        <div class="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div class="absolute left-0 mt-2 w-48 bg-[#fffae1] rounded-md shadow-lg py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                             {% for category in categories %}
                             <a href="{{ url_for('products', category=category[0]) }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">{{ category[1] }}</a>
                             {% endfor %}
@@ -63,7 +63,7 @@
                 <div class="flex items-center space-x-4">
                     <!-- Search -->
                     <div class="hidden md:block relative">
-                        <input type="text" placeholder="Search..." class="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <input type="text" placeholder="Search products..." class="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                         <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                     </div>
 
@@ -84,7 +84,7 @@
                             </div>
                             <span class="hidden md:block text-gray-700">{{ current_user.name }}</span>
                         </button>
-                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div class="absolute right-0 mt-2 w-48 bg-[#fffae1] rounded-md shadow-lg py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                             <a href="{{ url_for('orders') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">My Orders</a>
                             {% if current_user.is_admin %}
                             <a href="{{ url_for('admin_dashboard') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Admin Panel</a>
@@ -133,7 +133,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div>
                     <h3 class="text-xl font-bold mb-4">SwadGalli</h3>
-                    <p class="text-gray-300">Your one-stop shop for delicious snacks and treats.</p>
+                    <p class="text-gray-300">At Swadgalli, we are passionate about bringing authentic Nepali flavors to everyone. We craft high-quality, delicious snacks that delight customers and provide local stores, cafes, and markets with unique products that celebrate Nepal’s culinary heritage.</p>
                 </div>
                 <div>
                     <h4 class="text-lg font-semibold mb-4">Quick Links</h4>
@@ -141,15 +141,17 @@
                         <li><a href="{{ url_for('index') }}" class="text-gray-300 hover:text-white transition">Home</a></li>
                         <li><a href="{{ url_for('products') }}" class="text-gray-300 hover:text-white transition">Products</a></li>
                         <li><a href="#" class="text-gray-300 hover:text-white transition">About Us</a></li>
-                        <li><a href="#" class="text-gray-300 hover:text-white transition">Contact</a></li>
+                        <li><a href="{{url_for('policy')}}" class="text-gray-300 hover:text-white transition">Policy</a></li>
+
                     </ul>
                 </div>
                 <div>
                     <h4 class="text-lg font-semibold mb-4">Contact Info</h4>
-                    <p class="text-gray-300">Uttarbehadi - 04</p>
-                    <p class="text-gray-300">Dhangadhi, 10900</p>
-                    <p class="text-gray-300">swadgalli@gmail.com.com</p>
-                    <p class="text-gray-300">+977 9868432510</p>
+                    <a href="https://maps.app.goo.gl/P6C7mMSE6XTKMW9n6" ><pre>Uttarbehadi - 04
+Dhangadhi, 10900
+                    </pre></a>
+                    <p><a href="mailto:your.info.swadgalli@gmail.com" class=" hover:text-blue-300">info.swadgalli@gmail.com</a></p><br>
+                   <p><a href="tel:+977 9703931744">+977 9868432510</a></p>
                 </div>
             </div>
             <div class="border-t border-gray-700 mt-8 pt-6 text-center text-gray-300">

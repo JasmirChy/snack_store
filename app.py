@@ -92,6 +92,11 @@ def inject_global_data():
         format_date=format_date_filter
     )
 
+@app.route('/policy')
+@login_required
+def policy():
+    return render_template('policy.html')
+
 @app.route('/admin/slider')
 @login_required
 def admin_slider():

@@ -23,10 +23,10 @@
     {% endfor %}
   </div>
 
-  <div class="slider-controls ">
+  <!-- <div class="slider-controls ">
     <button onclick="prevSlide()">&#10094;</button>
     <button onclick="nextSlide()">&#10095;</button>
-  </div>
+  </div> -->
 </div>
 
 <script>
@@ -48,7 +48,26 @@
   .slider-wrapper { display: flex; transition: transform 0.5s ease-in-out; }
   .slide { min-width: 100%; position: relative; color: white; }
   .slide img, .slide video { width: 100%; height: 500px; object-fit: cover; }
-  .slide-text { position: absolute; bottom: 50px; left: 50px; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 10px; }
+  <!-- .slide-text { position: absolute; bottom: 50px; left: 50px; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 10px; } -->
+  .slide-text {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 15%;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+.slide-text h2 {
+  font-size: 3em;
+  color: rgb(213, 93, 33);
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 1000;
+}
+.slide-text p {
+  font-size: 1.5em;
+  color: rgb(194, 99, 62);
+}
   .slider-controls { position: absolute; top: 50%; width: 100%; display: flex; justify-content: space-between; transform: translateY(-50%); }
   .slider-controls button { background: rgba(0,0,0,0.6); border: none; color: white; padding: 10px; cursor: pointer; border-radius: 50%; }
 </style>
@@ -59,7 +78,7 @@
     <h2 class="text-3xl font-bold text-center mb-8">Featured Products</h2>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {% for product in products %}
-        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 cursor-pointer clickable-product" onclick="window.location='{{ url_for('product_detail', product_id=product[0]) }}'">
+        <div class="bg-[#fffae1] rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 cursor-pointer clickable-product" onclick="window.location='{{ url_for('product_detail', product_id=product[0]) }}'">
             <div class="relative">
                 <img src="{{ url_for('static', filename='uploads/products/' + product[6]) if product[6] else 'https://via.placeholder.com/300' }}" alt="{{ product[2] }}" class="w-full h-48 object-cover">
                 {% if product[5] == 0 %}
@@ -89,29 +108,30 @@
 </section>
 
 <!-- Features Section -->
-<section class="bg-gray-100 py-12">
+<section class="bg-[#e6dbac] py-12">
     <div class="container mx-auto px-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div class="text-center">
                 <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-truck text-white text-2xl"></i>
+                    <i class="fas fa-history text-white text-2xl"></i>
                 </div>
-                <h3 class="text-xl font-semibold mb-2">Free Delivery</h3>
-                <p class="text-gray-600">Free delivery on orders above रु 1000</p>
+                <h3 class="text-xl font-semibold mb-2">Sustaining Heritage</h3>
+                <p class="text-gray-600">
+We use sustainable practices to honor the land and cultural traditions of Nepal, preserving the authentic, traditional foods you love.</p>
             </div>
             <div class="text-center">
                 <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-shield-alt text-white text-2xl"></i>
+                    <i class="fas fa-award text-white text-2xl"></i>
                 </div>
-                <h3 class="text-xl font-semibold mb-2">Secure Payment</h3>
-                <p class="text-gray-600">Your payment information is safe with us</p>
+                <h3 class="text-xl font-semibold mb-2">Quality</h3>
+                <p class="text-gray-600">We use the finest local ingredients and time-honored techniques to ensure every bite delivers the authentic taste of Nepal.</p>
             </div>
             <div class="text-center">
                 <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-headset text-white text-2xl"></i>
+                    <i class="fas fa-heart text-white text-2xl"></i>
                 </div>
-                <h3 class="text-xl font-semibold mb-2">24/7 Support</h3>
-                <p class="text-gray-600">Get help whenever you need it</p>
+                <h3 class="text-xl font-semibold mb-2">Health</h3>
+                <p class="text-gray-600">Our traditional snacks nourish both body and soul, made with simple, wholesome ingredients.</p>
             </div>
         </div>
     </div>
