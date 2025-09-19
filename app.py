@@ -92,6 +92,65 @@ def inject_global_data():
         format_date=format_date_filter
     )
 
+@app.route('/admin/slider')
+@login_required
+def admin_slider():
+    if not current_user.is_admin:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM slider_items ORDER BY created_at DESC")
+    items = cur.fetchall()
+    cur.close()
+    return render_template('admin/slider.html', items=items)
+
+@app.route('/admin/slider/add', methods=['POST'])
+@login_required
+def admin_add_slider():
+    if not current_user.is_admin:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+
+    file = request.files['file']
+    title = request.form.get('title')
+    details = request.form.get('details')
+    media_type = request.form.get('type')
+
+    if file and file.filename != '':
+        filename = secure_filename(f"{uuid.uuid4().hex}_{file.filename}")
+        folder = os.path.join(app.config['UPLOAD_FOLDER'], 'slider')
+        os.makedirs(folder, exist_ok=True)
+        filepath = os.path.join(folder, filename)
+        file.save(filepath)
+
+        # store relative path (uploads/slider/file.jpg)
+        db_path = f"uploads/slider/{filename}"
+
+        cur = mysql.connection.cursor()
+        cur.execute(
+            "INSERT INTO slider_items (type, file_path, title, details) VALUES (%s, %s, %s, %s)",
+            (media_type, db_path, title, details)
+        )
+        mysql.connection.commit()
+        cur.close()
+        flash("Slider item added successfully", "success")
+
+    return redirect(url_for('admin_slider'))
+
+@app.route('/admin/slider/delete/<int:item_id>')
+@login_required
+def admin_delete_slider(item_id):
+    if not current_user.is_admin:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM slider_items WHERE id = %s", (item_id,))
+    mysql.connection.commit()
+    cur.close()
+    flash("Slider item deleted", "info")
+    return redirect(url_for('admin_slider'))
 
 # Routes
 @app.route('/')
@@ -101,6 +160,9 @@ def index():
     # Get all active banners for the slider
     cur.execute("SELECT * FROM banners WHERE active = TRUE ORDER BY created_at DESC")
     banners = cur.fetchall()
+
+    cur.execute("SELECT * FROM slider_items ORDER BY created_at DESC")
+    slider_items = cur.fetchall()
     
     # Get products
     cur.execute("SELECT * FROM products WHERE stock > 0 ORDER BY created_at DESC LIMIT 8")
@@ -108,7 +170,7 @@ def index():
     
     cur.close()
     
-    return render_template('index.html', banners=banners, products=products)
+    return render_template('index.html',slider_items=slider_items, banners=banners, products=products)
 
 @app.route('/products')
 def products():

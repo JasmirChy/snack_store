@@ -15,7 +15,7 @@
             <source src="{{ url_for('static', filename=item[2]) }}" type="video/mp4">
           </video>
         {% endif %}
-        <div class="slide-text">
+        <div class="slide-text ">
           <h2>{{ item[3] }}</h2>
           <p>{{ item[4] }}</p>
         </div>
@@ -23,7 +23,7 @@
     {% endfor %}
   </div>
 
-  <div class="slider-controls">
+  <div class="slider-controls ">
     <button onclick="prevSlide()">&#10094;</button>
     <button onclick="nextSlide()">&#10095;</button>
   </div>
