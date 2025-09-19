@@ -99,7 +99,7 @@ def index():
     cur = mysql.connection.cursor()
     
     # Get all active banners for the slider
-    cur.execute("SELECT * FROM site_banner WHERE active = TRUE ORDER BY created_at DESC LIMIT 1")
+    cur.execute("SELECT * FROM banners WHERE active = TRUE ORDER BY created_at DESC")
     banners = cur.fetchall()
     
     # Get products
@@ -812,6 +812,149 @@ def admin_users():
     cur.close()
     
     return render_template('admin/users.html', users=users)
+
+# Serve banner images
+@app.route('/banners/<path:filename>')
+def serve_banner(filename):
+    try:
+        return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER'], 'banners'), filename)
+    except Exception as e:
+        print(f"Error serving banner {filename}: {e}")
+        # Fallback to static path
+        return redirect(url_for('static', filename='uploads/banners/' + filename))
+
+@app.route('/admin/banners')
+@login_required
+def admin_banners():
+    if not current_user.is_admin:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM banners ORDER BY created_at DESC")
+    banners = cur.fetchall()
+    cur.close()
+    
+    return render_template('admin/banner.html', banners=banners)
+
+@app.route('/admin/banners/add', methods=['GET', 'POST'])
+@login_required
+def admin_add_banner():
+    if not current_user.is_admin:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        title = request.form.get('title')
+        slider_text = request.form.get('slider_text', '')
+        active = bool(request.form.get('active'))
+        
+        if 'image' not in request.files:
+            flash('No image file', 'error')
+            return redirect(request.referrer)
+        
+        file = request.files['image']
+        if file.filename == '':
+            flash('No image selected', 'error')
+            return redirect(request.referrer)
+        
+        if file and allowed_file(file.filename):
+            filename = secure_filename(f"{uuid.uuid4().hex}_{file.filename}")
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'banners', filename)
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            file.save(filepath)
+            
+            if active:
+                cur = mysql.connection.cursor()
+                cur.execute("UPDATE banners SET active = FALSE")
+                mysql.connection.commit()
+            
+            cur.execute("INSERT INTO banners (title, slider_text, image, active) VALUES (%s, %s, %s, %s)", (title, slider_text, filename, active))
+            mysql.connection.commit()
+            cur.close()
+            
+            flash('Banner added successfully', 'success')
+            return redirect(url_for('admin_banners'))
+    
+    return render_template('admin/banner_form.html')
+
+@app.route('/admin/banners/edit/<int:banner_id>', methods=['GET', 'POST'])
+@login_required
+def admin_edit_banner(banner_id):
+    if not current_user.is_admin:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    cur = mysql.connection.cursor()
+    
+    if request.method == 'POST':
+        title = request.form.get('title')
+        slider_text = request.form.get('slider_text', '')
+        active = bool(request.form.get('active'))
+        
+        image_filename = None
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename != '' and allowed_file(file.filename):
+                filename = secure_filename(f"{uuid.uuid4().hex}_{file.filename}")
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'banners', filename)
+                os.makedirs(os.path.dirname(filepath), exist_ok=True)
+                file.save(filepath)
+                image_filename = filename
+        
+        if active:
+            cur.execute("UPDATE banners SET active = FALSE WHERE id != %s", (banner_id,))
+            mysql.connection.commit()
+        
+        if image_filename:
+            cur.execute("UPDATE banners SET title = %s, slider_text = %s, image = %s, active = %s WHERE id = %s", 
+                       (title, slider_text, image_filename, active, banner_id))
+        else:
+            cur.execute("UPDATE banners SET title = %s, slider_text = %s, active = %s WHERE id = %s", 
+                       (title, slider_text, active, banner_id))
+        
+        mysql.connection.commit()
+        cur.close()
+        
+        flash('Banner updated successfully', 'success')
+        return redirect(url_for('admin_banners'))
+    
+    cur.execute("SELECT * FROM banners WHERE id = %s", (banner_id,))
+    banner = cur.fetchone()
+    cur.close()
+    
+    return render_template('admin/banner_form.html', banner=banner)
+
+@app.route('/admin/banners/delete/<int:banner_id>')
+@login_required
+def admin_delete_banner(banner_id):
+    if not current_user.is_admin:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM banners WHERE id = %s", (banner_id,))
+    mysql.connection.commit()
+    cur.close()
+    
+    flash('Banner deleted successfully', 'success')
+    return redirect(url_for('admin_banners'))
+
+@app.route('/admin/banners/set_active/<int:banner_id>')
+@login_required
+def admin_set_active_banner(banner_id):
+    if not current_user.is_admin:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE banners SET active = FALSE")
+    cur.execute("UPDATE banners SET active = TRUE WHERE id = %s", (banner_id,))
+    mysql.connection.commit()
+    cur.close()
+    
+    flash('Banner set as active', 'success')
+    return redirect(url_for('admin_banners'))
 
 @app.route('/admin/settings')
 @login_required

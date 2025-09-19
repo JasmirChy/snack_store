@@ -1,34 +1,14 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Hero Banner -->
-{% if banner %}
-<section class="relative {% if banner|length > 5 and banner[5] %} bg-cover bg-center{% else %}bg-gray-900{% endif %} text-black" 
-         {% if banner|length > 5 and banner[5] and banner[5] is string %}style="background-image: url('{{ url_for('static', filename='uploads/banners/' + banner[5]) }}');"{% endif %}>
-    <div class="{% if banner|length > 5 and banner[5] %}bg-black bg-opacity-50{% endif %}">
-        <div class="bg-[url('/static/images/ggg.png')] w-full bg-cover  container mx-auto px-4 py-16">
-            <div class="flex flex-col md:flex-row items-center">
-                <div class="md:w-1/2 mb-8 md:mb-0">
-                    <h1 class="text-4xl md:text-5xl font-bold mb-4">{{ banner[1] }}</h1>
-                    <p class="text-xl mb-6">SwadGalli Where Tradition Meets Taste</p>
-                    <a href="{{ url_for('products') }}" class="bg-primary hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full transition duration-300">Shop Now</a>
-                </div>
-                <div class="md:w-96 ">
-                    <img src="{{ url_for('static', filename='uploads/banners/' + banner[2]) }}" alt="{{ banner[1] }}" class="rounded-lg shadow-xl {% if banner|length > 5 and banner[5] %}bg-white bg-opacity-20 backdrop-blur-sm p-1{% endif %}">
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-{% endif %}
 
-<!-- Featured Products -->
+<!-- Banner Section -->
+<!-- Featured Products Section -->
 <section class="container mx-auto px-4 py-12">
     <h2 class="text-3xl font-bold text-center mb-8">Featured Products</h2>
-    
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {% for product in products %}
-        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 cursor-pointer" onclick="window.location='{{ url_for('product_detail', product_id=product[0]) }}'">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 cursor-pointer clickable-product" onclick="window.location='{{ url_for('product_detail', product_id=product[0]) }}'">
             <div class="relative">
                 <img src="{{ url_for('static', filename='uploads/products/' + product[6]) if product[6] else 'https://via.placeholder.com/300' }}" alt="{{ product[2] }}" class="w-full h-48 object-cover">
                 {% if product[5] == 0 %}
@@ -37,7 +17,8 @@
             </div>
             <div class="p-4">
                 <h3 class="font-semibold text-lg mb-2">{{ product[2] }}</h3>
-                <p class="text-gray-600 mb-4">{{ format_currency(product[4]) }}</p>
+                <p class="text-gray-600 mb-4 text-sm">{{ product[3][:100] }}{% if product[3]|length > 100 %}...{% endif %}</p>
+                <p class="text-primary font-bold text-xl mb-4">{{ format_currency(product[4]) }}</p>
                 <div class="flex justify-between items-center">
                     <span class="text-primary hover:text-blue-700 font-semibold">View Details</span>
                     {% if product[5] > 0 %}
@@ -54,10 +35,6 @@
         </div>
         {% endfor %}
     </div>
-    
-    <div class="text-center mt-8">
-        <a href="{{ url_for('products') }}" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-8 rounded-full transition duration-300">View All Products</a>
-    </div>
 </section>
 
 <!-- Features Section -->
@@ -65,27 +42,104 @@
     <div class="container mx-auto px-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div class="text-center">
-                <div class="bg-primary rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-truck text-white text-2xl"></i>
                 </div>
-                <h3 class="font-semibold text-lg mb-2">Free Shipping</h3>
-                <p class="text-gray-600">Free shipping on orders over रु1000</p>
+                <h3 class="text-xl font-semibold mb-2">Free Delivery</h3>
+                <p class="text-gray-600">Free delivery on orders above रु 1000</p>
             </div>
             <div class="text-center">
-                <div class="bg-primary rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-shield-alt text-white text-2xl"></i>
                 </div>
-                <h3 class="font-semibold text-lg mb-2">Secure Payment</h3>
-                <p class="text-gray-600">We ensure secure payment with SSL encryption</p>
+                <h3 class="text-xl font-semibold mb-2">Secure Payment</h3>
+                <p class="text-gray-600">Your payment information is safe with us</p>
             </div>
             <div class="text-center">
-                <div class="bg-primary rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-undo text-white text-2xl"></i>
+                <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-headset text-white text-2xl"></i>
                 </div>
-                <h3 class="font-semibold text-lg mb-2">Easy Returns</h3>
-                <p class="text-gray-600">30-day money-back guarantee</p>
+                <h3 class="text-xl font-semibold mb-2">24/7 Support</h3>
+                <p class="text-gray-600">Get help whenever you need it</p>
             </div>
         </div>
     </div>
 </section>
+
+<!-- Simple Slider JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const slides = document.querySelectorAll('.slide');
+    const dots = document.querySelectorAll('.dot-button');
+    const prevBtn = document.querySelector('.slider-prev');
+    const nextBtn = document.querySelector('.slider-next');
+    
+    if (slides.length === 0) return;
+    
+    let currentIndex = 0;
+    let interval;
+    
+    // Show specific slide
+    function showSlide(index) {
+        slides.forEach(slide => slide.style.opacity = '0');
+        dots.forEach(dot => dot.classList.remove('bg-opacity-100'));
+        
+        slides[index].style.opacity = '1';
+        if (dots[index]) dots[index].classList.add('bg-opacity-100');
+        currentIndex = index;
+    }
+    
+    // Next slide
+    function nextSlide() {
+        let next = currentIndex + 1;
+        if (next >= slides.length) next = 0;
+        showSlide(next);
+    }
+    
+    // Start auto-slide
+    function startSlider() {
+        if (slides.length > 1) {
+            interval = setInterval(nextSlide, 5000);
+        }
+    }
+    
+    // Initialize
+    showSlide(0);
+    startSlider();
+    
+    // Navigation events
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            clearInterval(interval);
+            nextSlide();
+            startSlider();
+        });
+    }
+    
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            clearInterval(interval);
+            let prev = currentIndex - 1;
+            if (prev < 0) prev = slides.length - 1;
+            showSlide(prev);
+            startSlider();
+        });
+    }
+    
+    // Dot navigation
+    dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+            clearInterval(interval);
+            showSlide(index);
+            startSlider();
+        });
+    });
+});
+</script>
+
+<style>
+.slide {
+    transition: opacity 0.5s ease-in-out;
+}
+</style>
 {% endblock %}

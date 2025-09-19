@@ -70,6 +70,7 @@ CREATE TABLE order_items (
 CREATE TABLE banners (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(100),
+    slider_text TEXT,
     image VARCHAR(255) NOT NULL,
     active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
