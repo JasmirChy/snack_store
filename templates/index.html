@@ -3,6 +3,57 @@
 {% block content %}
 
 <!-- Banner Section -->
+<!-- Slider Section -->
+<div class="slider-container">
+  <div class="slider-wrapper" id="sliderWrapper">
+    {% for item in slider_items %}
+      <div class="slide">
+        {% if item[1] == 'image' %}
+          <img src="{{ url_for('static', filename=item[2]) }}" alt="{{ item[3] }}">
+        {% elif item[1] == 'video' %}
+          <video autoplay muted loop>
+            <source src="{{ url_for('static', filename=item[2]) }}" type="video/mp4">
+          </video>
+        {% endif %}
+        <div class="slide-text">
+          <h2>{{ item[3] }}</h2>
+          <p>{{ item[4] }}</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="slider-controls">
+    <button onclick="prevSlide()">&#10094;</button>
+    <button onclick="nextSlide()">&#10095;</button>
+  </div>
+</div>
+
+<script>
+  let index = 0;
+  function showSlide(i) {
+    const wrapper = document.getElementById('sliderWrapper');
+    const slides = document.querySelectorAll('.slide');
+    if (i >= slides.length) index = 0;
+    if (i < 0) index = slides.length - 1;
+    wrapper.style.transform = 'translateX(' + (-index * 100) + '%)';
+  }
+  function nextSlide() { index++; showSlide(index); }
+  function prevSlide() { index--; showSlide(index); }
+  setInterval(nextSlide, 5000); // auto slide every 5s
+</script>
+
+<style>
+  .slider-container { position: relative; width: 100%; height: 500px; overflow: hidden; }
+  .slider-wrapper { display: flex; transition: transform 0.5s ease-in-out; }
+  .slide { min-width: 100%; position: relative; color: white; }
+  .slide img, .slide video { width: 100%; height: 500px; object-fit: cover; }
+  .slide-text { position: absolute; bottom: 50px; left: 50px; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 10px; }
+  .slider-controls { position: absolute; top: 50%; width: 100%; display: flex; justify-content: space-between; transform: translateY(-50%); }
+  .slider-controls button { background: rgba(0,0,0,0.6); border: none; color: white; padding: 10px; cursor: pointer; border-radius: 50%; }
+</style>
+
+
 <!-- Featured Products Section -->
 <section class="container mx-auto px-4 py-12">
     <h2 class="text-3xl font-bold text-center mb-8">Featured Products</h2>
