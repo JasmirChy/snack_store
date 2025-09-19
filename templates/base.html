@@ -43,11 +43,10 @@
                 <!-- Navigation -->
                 <nav class="hidden md:flex space-x-8">
                     <a href="{{ url_for('index') }}" class="text-gray-700 ml-4 hover:text-primary transition">Home</a>
-                    <!-- <a href="{{ url_for('products') }}" class="text-gray-700 hover:text-primary transition">Products</a> -->
                     
                     <!-- Categories Dropdown -->
                     <div class="relative group">
-                        <button class="text-gray-700 mr-4 hover:text-primary transition flex items-center">
+                        <button class=" text-gray-700 mr-4 hover:text-primary transition flex items-center">
                             Categories
                             <i class="fas fa-chevron-down ml-1 text-xs"></i>
                         </button>
@@ -58,6 +57,7 @@
                         </div>
                     </div>
                 </nav>
+                <a href="{{ url_for('products') }}" class="md:pr-70 text-gray-700 hover:text-primary  transition">Products</a>
 
                 <!-- Search, Cart, Auth -->
                 <div class="flex items-center space-x-4">
