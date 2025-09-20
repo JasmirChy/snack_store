@@ -1,12 +1,15 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
+import config
+from flask import Flask,flash, render_template, request, redirect, url_for, flash, send_from_directory
 from flask_mysqldb import MySQL
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import uuid
+from flask_mail import Mail, Message
 from datetime import datetime
-
+import smtplib
+from email.mime.text import MIMEText
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
 
@@ -17,6 +20,27 @@ mysql = MySQL(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+def send_admin_notification():
+    sender_email = "info.swadgalli@gmail.com"
+    sender_password = "chfy qktf tnuz esgl"  # use app password if Gmail
+    admin_email = "jasmirchy@gmail.com"
+    
+    subject = "New Order Alert"
+    body = "Dear Admin, New Order is arrived. Hurry up! \n A new order has been placed in your snack store website."
+    
+    msg = MIMEText(body)
+    msg['Subject'] = subject
+    msg['From'] = sender_email
+    msg['To'] = admin_email
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+    except Exception as e:
+        print("Failed to send notification:", e)
+
 
 # User class for Flask-Login
 class User(UserMixin):
@@ -129,7 +153,6 @@ def change_password():
         return redirect(url_for('index'))
 
     return render_template('auth/change_password.html')
-
 
 @app.route('/policy')
 @login_required
@@ -380,7 +403,9 @@ def checkout():
         """, (current_user.id, total_amount, address, payment_method))
         
         order_id = cur.lastrowid
-        
+        mysql.connection.commit()
+        send_admin_notification()
+    
         for item in cart_items:
             cur.execute("""
                 INSERT INTO order_items (order_id, product_id, quantity, unit_price)
