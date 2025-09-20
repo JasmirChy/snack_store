@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Order #{{ order[0] }}</h1>
+
+    <!-- Order Info -->
+    <div class="bg-[#fffae1] rounded-lg shadow-md p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Left Column -->
+            <div>
+                <p><span class="font-semibold">Order Date:</span> {{ order[6]|format_date }}</p>
+                <p><span class="font-semibold">Payment Method:</span> 
+                    {% if order[3] == 'cod' %}Cash on Delivery{% else %}Online Payment{% endif %}
+                </p>
+                <p><span class="font-semibold">Status:</span> 
+                    <span class="px-2 py-1 rounded-full text-xs font-semibold
+                        {% if order[4] == 'pending' %}bg-yellow-100 text-yellow-800
+                        {% elif order[4] == 'processing' %}bg-blue-100 text-blue-800
+                        {% elif order[4] == 'shipped' %}bg-indigo-100 text-indigo-800
+                        {% elif order[4] == 'delivered' %}bg-green-100 text-green-800
+                        {% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ order[4]|title }}
+                    </span>
+                </p>
+            </div>
+
+            <!-- Right Column -->
+            <div>
+                <p><span class="font-semibold">Shipping Address:</span></p>
+                <p class="text-gray-700">{{ order[2] }}</p>
+                {% if order[7] %}
+                <p><span class="font-semibold">Tracking Number:</span> {{ order[7] }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Tracking -->
+    <div class="bg-[#fffae1] rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-xl font-semibold mb-4">Order Tracking</h2>
+        <div class="flex items-center justify-between relative">
+            {% for value, label, icon in steps %}
+                <div class="flex-1 flex flex-col items-center relative">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-full
+                        {% if order[4] == 'cancelled' %}
+                            {% if value == 'cancelled' %} bg-red-500 text-white {% else %} bg-gray-300 text-gray-600 {% endif %}
+                        {% elif loop.index0 <= current_index %}
+                            bg-green-500 text-white
+                        {% else %}
+                            bg-gray-300 text-gray-600
+                        {% endif %}">
+                        {{ icon }}
+                    </div>
+                    <span class="mt-2 text-xs font-medium text-center">{{ label }}</span>
+                </div>
+
+                {% if not loop.last %}
+                    <div class="flex-1 h-1 
+                        {% if order[4] == 'cancelled' %}
+                            bg-gray-300
+                        {% elif loop.index0 < current_index %}
+                            bg-green-500
+                        {% else %}
+                            bg-gray-300
+                        {% endif %}">
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+
+    <!-- Ordered Products -->
+    <div class="bg-[#fffae1] rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-2xl font-semibold mb-4">Products in this Order</h2>
+        <div class="space-y-4">
+            {% for item in items %}
+    <div class="flex border border-gray-200 rounded-md p-4 items-center">
+        <!-- Product Image -->
+        <div class="flex-shrink-0">
+            <img src="{{ url_for('static', filename='uploads/products/' + item[3]) if item[3] else 'https://via.placeholder.com/120' }}" 
+                alt="{{ item[0] }}" 
+                class="w-32 h-32 object-cover rounded-md">
+        </div>
+
+        <!-- Product Details -->
+        <div class="ml-96 flex-1 flex flex-col justify-center ">
+            <h4 class="font-semibold">{{ item[0] }}</h4>  <!-- Product Name -->
+            <p class="text-gray-700"><span class="font-semibold">Quantity:</span> {{ item[1] }}</p>
+            <p class="text-gray-700"><span class="font-semibold">Unit Price:</span> Rs. {{ "%.2f"|format(item[2]) }}</p>
+            <p class="font-semibold mt-1">Subtotal: Rs. {{ "%.2f"|format(item[1]*item[2]) }}</p>
+        </div>
+    </div>
+    {% endfor %}
+
+    </div>
+
+    <!-- Total Amount -->
+    <div class="text-right mt-6 mr-10">
+        <p class="text-lg font-semibold">Total: Rs. {{ "%.2f"|format(order[1]|float) }}</p>
+    </div>
+</div>
+
+
+    <div class="text-center">
+        <a href="{{ url_for('user_orders') }}" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300">
+            Back to Orders
+        </a>
+    </div>
+</div>
+{% endblock %}

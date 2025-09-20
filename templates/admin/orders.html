@@ -6,7 +6,7 @@
     <h1 class="text-3xl font-bold mb-8">Manage Orders</h1>
     
     <!-- Order Filters -->
-    <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+    <div class="bg-[#fffae1] rounded-lg shadow-md p-4 mb-6">
         <h2 class="text-lg font-semibold mb-3">Filter Orders</h2>
         <div class="flex flex-wrap gap-2">
             <a href="{{ url_for('admin_orders') }}" class="px-3 py-1 rounded-full {% if not status_filter %}bg-primary text-white{% else %}bg-gray-200 hover:bg-gray-300 text-gray-800{% endif %}">All</a>
@@ -20,11 +20,12 @@
         </div>
     </div>
     
-    <div class="bg-white rounded-lg shadow-md overflow-x-auto">
+    <div class="bg-[#fffae1] rounded-lg shadow-md overflow-x-auto">
         <table class="w-full">
             <thead>
                 <tr class="bg-gray-100">
                     <th class="px-4 py-3 text-left">Order ID</th>
+                    <th class="px-4 py-3 text-left">Product</th> <!-- New column -->
                     <th class="px-4 py-3 text-left">Date</th>
                     <th class="px-4 py-3 text-left">Tracking number</th>
                     <th class="px-4 py-3 text-left">Amount</th>
@@ -37,6 +38,9 @@
     {% for order in orders %}
     <tr class="border-b border-gray-200">
         <td class="px-4 py-3"><a href="{{ url_for('admin_order_detail', order_id=order[0]) }}" class="text-blue-600 hover:underline">#{{ order[0] }}</a></td>
+        <td class="px-4 py-3 font-medium text-gray-700">
+            {{ order[-1] if order[-1] else '-' }}  <!-- Product names -->
+        </td>       
         <td class="px-4 py-3 font-semibold">{{ order[8] }}</td>
         <td class="px-4 py-3">{{ order[7] | format_date }}</td>
         <td class="px-4 py-3">Rs. {{ "%.2f"|format(order[2]) }}</td>

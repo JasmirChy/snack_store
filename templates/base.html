@@ -30,7 +30,7 @@
     }
     </style>
 </head>
-<body class="bg-[#fff5ca]">
+<body class="bg-[#fff5ca] flex flex-col min-h-screen">
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-[#fff5ca] shadow-md">
         <div class="container mx-auto px-4 py-3">
@@ -85,10 +85,12 @@
                             <span class="hidden md:block text-gray-700">{{ current_user.name }}</span>
                         </button>
                         <div class="absolute right-0 mt-2 w-48 bg-[#fffae1] rounded-md shadow-lg py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                            <a href="{{ url_for('orders') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">My Orders</a>
                             <a href="{{ url_for('change_password') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Change Password</a>
                             {% if current_user.is_admin %}
                             <a href="{{ url_for('admin_dashboard') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Admin Panel</a>
+                            {%else%}
+                            <a href="{{ url_for('orders') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Order History</a>
+                            <a href="{{ url_for('user_orders') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">My order List</a>
                             {% endif %}
                             <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Logout</a>
                         </div>
@@ -124,7 +126,7 @@
     {% endwith %}
 
     <!-- Main content -->
-    <main>
+    <main class="flex-grow">
         {% block content %}{% endblock %}
     </main>
 

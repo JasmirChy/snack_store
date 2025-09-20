@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">My Orders</h1>
+
+    <div class="bg-[#fffae1] rounded-lg shadow-md overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="bg-gray-100">
+                    <th class="px-4 py-3 text-left">Order ID</th>
+                    <!-- <th class="px-4 py-3 text-left">Product</th> -->
+                    <th class="px-4 py-3 text-left">Date</th>
+                    <th class="px-4 py-3 text-left">Amount</th>
+                    <th class="px-4 py-3 text-left">Payment</th>
+                    <th class="px-4 py-3 text-left">Status</th>
+                    <th class="px-4 py-3 text-left">Tracking</th>
+                    <th class="px-4 py-3 text-left">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr class="border-b border-gray-200">
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('user_order_detail', order_id=order[0]) }}" class="text-blue-600 hover:underline">#{{ order[0] }}</a>
+                    </td>
+                    <td class="px-4 py-3">{{ order[7] | format_date }}</td>
+                    <td class="px-4 py-3">Rs. {{ "%.2f"|format(order[2]) }}</td>
+                    <td class="px-4 py-3">{{ order[4] }}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-semibold
+                            {% if order[5] == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% elif order[5] == 'confirmed' %}bg-blue-100 text-blue-800
+                            {% elif order[5] == 'shipped' %}bg-indigo-100 text-indigo-800
+                            {% elif order[5] == 'delivered' %}bg-green-100 text-green-800
+                            {% elif order[5] == 'cancelled' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ order[5] | title }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        {% if order[6] %}
+                            <span class="text-gray-700 font-medium">{{ order[6] }}</span>
+                        {% else %}
+                            <span class="text-gray-400 italic">Not available</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('user_order_detail', order_id=order[0]) }}" class="text-blue-600 hover:text-blue-800" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if total_pages > 1 %}
+    <div class="mt-6 flex justify-center">
+        <div class="flex space-x-2">
+            {% if page > 1 %}
+            <a href="{{ url_for('user_orders', page=page-1) }}" class="px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                Previous
+            </a>
+            {% endif %}
+
+            {% for p in range(1, total_pages + 1) %}
+            <a href="{{ url_for('user_orders', page=p) }}" class="px-3 py-2 {% if p == page %}bg-primary text-white{% else %}bg-white border border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} rounded-md">
+                {{ p }}
+            </a>
+            {% endfor %}
+
+            {% if page < total_pages %}
+            <a href="{{ url_for('user_orders', page=page+1) }}" class="px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                Next
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

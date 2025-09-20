@@ -11,7 +11,7 @@
     
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Order Information -->
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="bg-[#fffae1] rounded-lg shadow-md p-6">
             <h2 class="text-xl font-semibold mb-4">Order Information</h2>
             
             <div class="space-y-3">
@@ -78,7 +78,7 @@
         </div>
         
         <!-- Customer Information -->
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="bg-[#fffae1] rounded-lg shadow-md p-6">
             <h2 class="text-xl font-semibold mb-4">Customer Information</h2>
             
             <div class="space-y-3">
@@ -100,14 +100,19 @@
             {% if order[3] == 'online' and order[4] %}
             <div class="mt-6">
                 <h3 class="font-semibold mb-3">Payment Proof</h3>
-                <img src="{{ url_for('static', filename='uploads/payment_proofs/' + order[4]) }}" 
-                    alt="Payment Proof" class="w-64 h-64 object-contain rounded-md border">
+                <!-- <img src="{{ url_for('static', filename='uploads/payment_proofs/' + order[4]) }}" 
+                    alt="Payment Proof" class="w-64 h-64 object-contain rounded-md border"> -->
+            <img src="{{ url_for('static', filename='uploads/payment_proofs/' + order[4]) }}" 
+            alt="Payment Proof" 
+            class="w-64 h-64 object-contain rounded-md border cursor-pointer"
+            onclick="openImageModal(this.src)">
+        
             </div>
             {% endif %}
         </div>
         
  <!-- Order Items -->
-<div class="bg-white rounded-lg shadow-md p-6">
+<div class="bg-[#fffae1] rounded-lg shadow-md p-6">
     <h2 class="text-xl font-semibold mb-4">Order Items</h2>
     
     <div class="overflow-x-auto">
@@ -148,4 +153,29 @@
 </div>
     </div>
 </div>
+<!-- Image Modal -->
+<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+    <span class="absolute top-5 right-5 text-white text-3xl cursor-pointer" onclick="closeImageModal()">&times;</span>
+    <img id="modalImage" src="" class="max-h-[90%] max-w-[90%] rounded-md shadow-lg">
+</div>
+<script>
+function openImageModal(src) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    modalImg.src = src;
+    modal.classList.remove('hidden');
+}
+
+function closeImageModal() {
+    document.getElementById('imageModal').classList.add('hidden');
+}
+
+// Optional: close when clicking outside image
+document.getElementById('imageModal').addEventListener('click', function(e) {
+    if (e.target.id === 'imageModal') {
+        closeImageModal();
+    }
+});
+</script>
+
 {% endblock %}

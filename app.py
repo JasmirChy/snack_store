@@ -487,6 +487,94 @@ def admin_delete_order(order_id):
     flash("Order deleted successfully.", "success")
     return redirect(url_for('orders'))  # Adjust redirect to your orders listing route
 
+@app.route('/my_orders')
+@login_required
+def user_orders():
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    offset = (page - 1) * per_page
+
+    cur = mysql.connection.cursor()
+
+    # Fetch only the logged-in user's orders
+    cur.execute("""
+        SELECT id, user_id, total_amount, address, payment_method, status, tracking_number, created_at
+        FROM orders
+        WHERE user_id = %s
+        ORDER BY created_at DESC
+        LIMIT %s OFFSET %s
+    """, (current_user.id, per_page, offset))
+    orders = cur.fetchall()
+
+    # Count total orders for pagination
+    cur.execute("SELECT COUNT(*) FROM orders WHERE user_id = %s", (current_user.id,))
+    total_orders = cur.fetchone()[0]
+    cur.close()
+
+    total_pages = (total_orders + per_page - 1) // per_page
+
+    return render_template(
+        "user_orders.html",
+        orders=orders,
+        page=page,
+        total_pages=total_pages
+    )
+
+@app.route('/orders/<int:order_id>')
+@login_required
+def user_order_detail(order_id):
+    user_id = current_user.id
+    cursor = mysql.connection.cursor()
+
+    cursor.execute("""
+        SELECT id, total_amount, address, payment_method, status, payment_proof, created_at, tracking_number
+        FROM orders
+        WHERE id = %s AND user_id = %s
+    """, (order_id, user_id))
+    order = cursor.fetchone()
+    if not order:
+        flash("Order not found!", "danger")
+        return redirect(url_for('user_orders'))
+
+    # Convert total_amount to float
+    order = list(order)
+    order[1] = float(order[1])
+
+    # Fetch order items with product title
+    cursor.execute("""
+        SELECT p.title, oi.quantity, oi.unit_price, p.image
+        FROM order_items oi
+        JOIN products p ON oi.product_id = p.id
+        WHERE oi.order_id = %s
+    """, (order_id,))
+    items = cursor.fetchall()
+    
+    # Convert unit_price to float
+    items = [(i[0], i[1], float(i[2]), i[3]) for i in items]
+
+    # Define order steps
+    steps = [
+        ("pending", "Pending", "🕒"),
+        ("confirmed", "Confirmed", "✅"),
+        ("packed", "Packed", "📦"),
+        ("shipped", "Shipped", "🚚"),
+        ("out_for_delivery", "Out for Delivery", "📍"),
+        ("delivered", "Delivered", "🎉"),
+        ("cancelled", "Cancelled", "❌"),
+    ]
+
+    # Find current step index
+    status_map = {s[0]: i for i, s in enumerate(steps)}
+    current_index = status_map.get(order[4], -1)
+
+    return render_template(
+        "user_order_detail.html",
+        order=order,
+        items=items,
+        steps=steps,
+        current_index=current_index
+    )
+
 
 @app.route('/upload_payment_proof/<int:order_id>', methods=['POST'])
 @login_required
@@ -628,14 +716,32 @@ def admin_dashboard():
     cur.execute("SELECT COUNT(*) FROM orders WHERE status = 'pending'")
     pending_orders = cur.fetchone()[0]
     
+    # cur.execute("""
+    #     SELECT o.id, o.created_at, o.total_amount, o.status, u.name 
+    #     FROM orders o 
+    #     JOIN users u ON o.user_id = u.id 
+    #     ORDER BY o.created_at DESC 
+    #     LIMIT 5
+    # """)
+    # recent_orders = cur.fetchall()
     cur.execute("""
-        SELECT o.id, o.created_at, o.total_amount, o.status, u.name 
-        FROM orders o 
-        JOIN users u ON o.user_id = u.id 
-        ORDER BY o.created_at DESC 
-        LIMIT 5
+    SELECT 
+        o.id,
+        o.created_at,
+        o.total_amount,
+        o.status,
+        u.name,
+        GROUP_CONCAT(p.title SEPARATOR ', ') AS product_names
+    FROM orders o
+    JOIN users u ON o.user_id = u.id
+    JOIN order_items oi ON oi.order_id = o.id
+    JOIN products p ON p.id = oi.product_id
+    GROUP BY o.id
+    ORDER BY o.created_at DESC
+    LIMIT 5
     """)
     recent_orders = cur.fetchall()
+
     
     cur.execute("SELECT * FROM banners WHERE active = TRUE ORDER BY created_at DESC LIMIT 1")
     active_banner = cur.fetchone()
@@ -811,37 +917,77 @@ def admin_orders():
     
     cur = mysql.connection.cursor()
     
+    # if status_filter:
+    #     query = """
+    #         SELECT o.*, u.name as user_name 
+    #         FROM orders o 
+    #         JOIN users u ON o.user_id = u.id 
+    #         WHERE o.status = %s 
+    #         ORDER BY o.created_at DESC
+    #         LIMIT %s OFFSET %s
+    #     """
+    #     cur.execute(query, (status_filter, per_page, (page-1)*per_page))
+    #     orders = cur.fetchall()
+        
+    #     count_query = "SELECT COUNT(*) FROM orders WHERE status = %s"
+    #     cur.execute(count_query, (status_filter,))
+    #     count_result = cur.fetchone()
+    #     total_orders = count_result[0] if count_result else 0
+    # else:
+    #     query = """
+    #         SELECT o.*, u.name as user_name 
+    #         FROM orders o 
+    #         JOIN users u ON o.user_id = u.id 
+    #         ORDER BY o.created_at DESC
+    #         LIMIT %s OFFSET %s
+    #     """
+    #     cur.execute(query, (per_page, (page-1)*per_page))
+    #     orders = cur.fetchall()
+        
+    #     count_query = "SELECT COUNT(*) FROM orders"
+    #     cur.execute(count_query)
+    #     count_result = cur.fetchone()
+    #     total_orders = count_result[0] if count_result else 0
     if status_filter:
         query = """
-            SELECT o.*, u.name as user_name 
-            FROM orders o 
-            JOIN users u ON o.user_id = u.id 
-            WHERE o.status = %s 
+            SELECT o.*, u.name as user_name, 
+                GROUP_CONCAT(p.title SEPARATOR ', ') AS product_names
+            FROM orders o
+            JOIN users u ON o.user_id = u.id
+            JOIN order_items oi ON oi.order_id = o.id
+            JOIN products p ON p.id = oi.product_id
+            WHERE o.status = %s
+            GROUP BY o.id
             ORDER BY o.created_at DESC
             LIMIT %s OFFSET %s
         """
         cur.execute(query, (status_filter, per_page, (page-1)*per_page))
         orders = cur.fetchall()
-        
+
         count_query = "SELECT COUNT(*) FROM orders WHERE status = %s"
         cur.execute(count_query, (status_filter,))
         count_result = cur.fetchone()
         total_orders = count_result[0] if count_result else 0
     else:
         query = """
-            SELECT o.*, u.name as user_name 
-            FROM orders o 
-            JOIN users u ON o.user_id = u.id 
+            SELECT o.*, u.name as user_name, 
+                GROUP_CONCAT(p.title SEPARATOR ', ') AS product_names
+            FROM orders o
+            JOIN users u ON o.user_id = u.id
+            JOIN order_items oi ON oi.order_id = o.id
+            JOIN products p ON p.id = oi.product_id
+            GROUP BY o.id
             ORDER BY o.created_at DESC
             LIMIT %s OFFSET %s
         """
-        cur.execute(query, (per_page, (page-1)*per_page))
-        orders = cur.fetchall()
-        
-        count_query = "SELECT COUNT(*) FROM orders"
-        cur.execute(count_query)
-        count_result = cur.fetchone()
-        total_orders = count_result[0] if count_result else 0
+    cur.execute(query, (per_page, (page-1)*per_page))
+    orders = cur.fetchall()
+
+    count_query = "SELECT COUNT(*) FROM orders"
+    cur.execute(count_query)
+    count_result = cur.fetchone()
+    total_orders = count_result[0] if count_result else 0
+
     
     total_pages = (total_orders + per_page - 1) // per_page if total_orders > 0 else 1
     
