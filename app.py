@@ -10,6 +10,7 @@ from flask_mail import Mail, Message
 from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
 
@@ -40,6 +41,53 @@ def send_admin_notification():
             server.send_message(msg)
     except Exception as e:
         print("Failed to send notification:", e)
+
+def send_customer_order_status_email(to_email, customer_name, order_id, status, tracking_number=None):
+    sender_email = "info.swadgalli@gmail.com"
+    sender_password = "chfy qktf tnuz esgl"   # Gmail app password
+
+    # Map DB statuses → customer-friendly labels
+    status_map = {
+        "pending": "Pending",
+        "confirmed": "Confirmed",
+        "packed": "Packed",
+        "shipped": "Shipped",
+        "out_for_delivery": "Out for Delivery",
+        "delivered": "Delivered",
+        "cancelled": "Cancelled"
+    }
+
+    # Use mapped label if exists, fallback to capitalized raw value
+    friendly_status = status_map.get(status, status.capitalize())
+
+    subject = f"Update on your Order #{order_id}"
+    tracking_info = f"\nTracking Number: {tracking_number}" if tracking_number else ""
+
+    body = f"""
+    Hello {customer_name},
+
+    Your order (Order ID: {order_id}) status has been updated.
+
+    Your order is {friendly_status}{tracking_info}
+
+    Thank you for shopping with Swad Galli!
+    """
+
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, to_email, msg.as_string())
+            # print(f"Status email sent to {to_email}")
+    except Exception as e:
+        print(f"Failed to send status email: {e}")
+
 
 
 # User class for Flask-Login
@@ -741,14 +789,7 @@ def admin_dashboard():
     cur.execute("SELECT COUNT(*) FROM orders WHERE status = 'pending'")
     pending_orders = cur.fetchone()[0]
     
-    # cur.execute("""
-    #     SELECT o.id, o.created_at, o.total_amount, o.status, u.name 
-    #     FROM orders o 
-    #     JOIN users u ON o.user_id = u.id 
-    #     ORDER BY o.created_at DESC 
-    #     LIMIT 5
-    # """)
-    # recent_orders = cur.fetchall()
+   
     cur.execute("""
     SELECT 
         o.id,
@@ -937,89 +978,58 @@ def admin_orders():
         return redirect(url_for('index'))
     
     status_filter = request.args.get('status', '')
-    page = request.args.get('page', 1, type=int)
+    # page = request.args.get('page', 1, type=int)
+    page = int(request.args.get("page", 1))
+
     per_page = 10
-    
+    offset = (page - 1) * per_page
+
     cur = mysql.connection.cursor()
     
-    # if status_filter:
-    #     query = """
-    #         SELECT o.*, u.name as user_name 
-    #         FROM orders o 
-    #         JOIN users u ON o.user_id = u.id 
-    #         WHERE o.status = %s 
-    #         ORDER BY o.created_at DESC
-    #         LIMIT %s OFFSET %s
-    #     """
-    #     cur.execute(query, (status_filter, per_page, (page-1)*per_page))
-    #     orders = cur.fetchall()
-        
-    #     count_query = "SELECT COUNT(*) FROM orders WHERE status = %s"
-    #     cur.execute(count_query, (status_filter,))
-    #     count_result = cur.fetchone()
-    #     total_orders = count_result[0] if count_result else 0
-    # else:
-    #     query = """
-    #         SELECT o.*, u.name as user_name 
-    #         FROM orders o 
-    #         JOIN users u ON o.user_id = u.id 
-    #         ORDER BY o.created_at DESC
-    #         LIMIT %s OFFSET %s
-    #     """
-    #     cur.execute(query, (per_page, (page-1)*per_page))
-    #     orders = cur.fetchall()
-        
-    #     count_query = "SELECT COUNT(*) FROM orders"
-    #     cur.execute(count_query)
-    #     count_result = cur.fetchone()
-    #     total_orders = count_result[0] if count_result else 0
+   
+    
     if status_filter:
-        query = """
-            SELECT o.*, u.name as user_name, 
-                GROUP_CONCAT(p.title SEPARATOR ', ') AS product_names
+        cur.execute("""
+            SELECT o.*, GROUP_CONCAT(p.title SEPARATOR ', ') as product_names
             FROM orders o
-            JOIN users u ON o.user_id = u.id
-            JOIN order_items oi ON oi.order_id = o.id
-            JOIN products p ON p.id = oi.product_id
+            JOIN order_items oi ON o.id = oi.order_id
+            JOIN products p ON oi.product_id = p.id
             WHERE o.status = %s
             GROUP BY o.id
             ORDER BY o.created_at DESC
             LIMIT %s OFFSET %s
-        """
-        cur.execute(query, (status_filter, per_page, (page-1)*per_page))
-        orders = cur.fetchall()
-
-        count_query = "SELECT COUNT(*) FROM orders WHERE status = %s"
-        cur.execute(count_query, (status_filter,))
-        count_result = cur.fetchone()
-        total_orders = count_result[0] if count_result else 0
+        """, (status_filter, per_page, offset))
     else:
-        query = """
-            SELECT o.*, u.name as user_name, 
-                GROUP_CONCAT(p.title SEPARATOR ', ') AS product_names
+        cur.execute("""
+            SELECT o.*, GROUP_CONCAT(p.title SEPARATOR ', ') as product_names
             FROM orders o
-            JOIN users u ON o.user_id = u.id
-            JOIN order_items oi ON oi.order_id = o.id
-            JOIN products p ON p.id = oi.product_id
+            JOIN order_items oi ON o.id = oi.order_id
+            JOIN products p ON oi.product_id = p.id
             GROUP BY o.id
             ORDER BY o.created_at DESC
             LIMIT %s OFFSET %s
-        """
-    cur.execute(query, (per_page, (page-1)*per_page))
+        """, (per_page, offset))
+
     orders = cur.fetchall()
 
-    count_query = "SELECT COUNT(*) FROM orders"
-    cur.execute(count_query)
-    count_result = cur.fetchone()
-    total_orders = count_result[0] if count_result else 0
-
-    
-    total_pages = (total_orders + per_page - 1) // per_page if total_orders > 0 else 1
-    
+    # Count total orders for pagination
+    if status_filter:
+        cur.execute("SELECT COUNT(*) FROM orders WHERE status = %s", (status_filter,))
+    else:
+        cur.execute("SELECT COUNT(*) FROM orders")
+    total_orders = cur.fetchone()[0]
     cur.close()
+
+    total_pages = (total_orders + per_page - 1) // per_page
+
+    return render_template(
+        "admin/orders.html",
+        orders=orders,
+        status_filter=status_filter,
+        page=page,
+        total_pages=total_pages,
+    )
     
-    return render_template('admin/orders.html', orders=orders, page=page, 
-                         total_pages=total_pages, status_filter=status_filter)
 
 @app.route('/admin/orders/update_status/<int:order_id>', methods=['POST'])
 @login_required
@@ -1027,26 +1037,39 @@ def admin_update_order_status(order_id):
     if not current_user.is_admin:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
-    
+
     status = request.form.get('status')
     tracking_number = request.form.get('tracking_number', '')
-    
+
     cur = mysql.connection.cursor()
-    
+
     if tracking_number:
-        cur.execute("UPDATE orders SET status = %s, tracking_number = %s WHERE id = %s", 
-                   (status, tracking_number, order_id))
+        cur.execute("UPDATE orders SET status = %s, tracking_number = %s WHERE id = %s",
+                    (status, tracking_number, order_id))
     else:
         cur.execute("UPDATE orders SET status = %s WHERE id = %s", (status, order_id))
-    
+
     mysql.connection.commit()
-    
-    cur.execute("SELECT u.email, u.name, o.id FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = %s", (order_id,))
+
+    # Get customer email + name
+    cur.execute("""
+        SELECT u.email, u.name, o.id, o.tracking_number
+        FROM orders o
+        JOIN users u ON o.user_id = u.id
+        WHERE o.id = %s
+    """, (order_id,))
     order = cur.fetchone()
     cur.close()
-    
+
+    if order:
+        user_email, user_name, order_id, tracking_no = order
+        send_customer_order_status_email(user_email, user_name, order_id, status, tracking_no)
+
     flash('Order status updated successfully', 'success')
     return redirect(url_for('admin_orders'))
+
+
+
 
 @app.route('/admin/orders/<int:order_id>')
 @login_required

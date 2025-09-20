@@ -2,7 +2,6 @@
 
 {% block content %}
 
-<!-- Banner Section -->
 <!-- Slider Section -->
 <div class="slider-container">
   <div class="slider-wrapper" id="sliderWrapper">
@@ -23,10 +22,7 @@
     {% endfor %}
   </div>
 
-  <!-- <div class="slider-controls ">
-    <button onclick="prevSlide()">&#10094;</button>
-    <button onclick="nextSlide()">&#10095;</button>
-  </div> -->
+ 
 </div>
 
 <script>
@@ -75,7 +71,7 @@
 
 <!-- Featured Products Section -->
 <section class="container mx-auto px-4 py-12">
-    <h2 class="text-3xl font-bold text-center mb-8">Featured Products</h2>
+    <h2 class="text-3xl font-bold text-center mb-8">Our Products</h2>
     <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {% for product in products %}
         <div class="bg-[#fffae1] rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 cursor-pointer clickable-product" onclick="window.location='{{ url_for('product_detail', product_id=product[0]) }}'">
