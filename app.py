@@ -92,6 +92,45 @@ def inject_global_data():
         format_date=format_date_filter
     )
 
+@app.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        old_password = request.form.get('old_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+
+        if not old_password or not new_password or not confirm_password:
+            flash("All fields are required", "error")
+            return redirect(url_for('change_password'))
+
+        # fetch current user record
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT password_hash FROM users WHERE id = %s", (current_user.id,))
+        user = cur.fetchone()
+        cur.close()
+
+        if not user or not check_password_hash(user[0], old_password):
+            flash("Old password is incorrect", "error")
+            return redirect(url_for('change_password'))
+
+        if new_password != confirm_password:
+            flash("New password and confirm password do not match", "error")
+            return redirect(url_for('change_password'))
+
+        # update new password
+        new_hash = generate_password_hash(new_password)
+        cur = mysql.connection.cursor()
+        cur.execute("UPDATE users SET password_hash = %s WHERE id = %s", (new_hash, current_user.id))
+        mysql.connection.commit()
+        cur.close()
+
+        flash("Password changed successfully", "success")
+        return redirect(url_for('index'))
+
+    return render_template('auth/change_password.html')
+
+
 @app.route('/policy')
 @login_required
 def policy():
@@ -431,6 +470,23 @@ def orders():
     cur.close()
     
     return render_template('orders/list.html', orders=orders, order_items=order_items)
+
+@app.route('/delete_order/<int:order_id>', methods=['POST', 'GET'])
+@login_required
+def admin_delete_order(order_id):
+    # Only allow admin to delete orders
+    if not current_user.is_admin:
+        flash("You are not authorized to perform this action.", "error")
+        return redirect(url_for('index'))
+
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM orders WHERE id = %s", (order_id,))
+    mysql.connection.commit()
+    cur.close()
+
+    flash("Order deleted successfully.", "success")
+    return redirect(url_for('orders'))  # Adjust redirect to your orders listing route
+
 
 @app.route('/upload_payment_proof/<int:order_id>', methods=['POST'])
 @login_required
