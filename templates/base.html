@@ -82,17 +82,7 @@
                         <div id="suggestions" class="absolute mt-1 w-full bg-white border rounded-md shadow-lg z-50 hidden"></div>
                     </div>
 
-                   <!-- <div class="hidden md:block relative">
-                        <input
-                            type="text"
-                            placeholder="Search products..."
-                            class="pl-10 pr-4 py-2 w-32 md:w-40 rounded-full border border-gray-300
-                                focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
-                                transition-all duration-300 ease-in-out
-                                hover:w-64 focus:w-64
-                                relative z-50">
-                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-50"></i>
-                    </div> -->
+                  
 
                     <!-- Cart -->
                     <a href="{{ url_for('cart') }}" class="relative p-2 text-gray-700 hover:text-primary transition">
@@ -140,17 +130,17 @@
     </header>
 
   <!-- Flash messages (floating over content) -->
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-<div id="flash-messages" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 space-y-2 w-11/12 md:w-1/3 bg-transparent">
-    {% for category, message in messages %}
-    <div class="p-4 rounded-md {% if category == 'error' %}bg-red-100 text-red-700{% elif category == 'success' %}bg-green-100 text-green-700{% else %}bg-blue-100 text-blue-700{% endif %} shadow-lg">
-        {{ message }}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div id="flash-messages" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 space-y-2 w-11/12 md:w-1/3 bg-transparent">
+        {% for category, message in messages %}
+        <div class="p-4 rounded-md {% if category == 'error' %}bg-red-100 text-red-700{% elif category == 'success' %}bg-green-100 text-green-700{% else %}bg-blue-100 text-blue-700{% endif %} shadow-lg">
+            {{ message }}
+        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
-</div>
-{% endif %}
-{% endwith %}
+    {% endif %}
+    {% endwith %}
 
 
     <!-- Main content -->
@@ -218,6 +208,15 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener("DOMContentLoaded", () => {
     const searchBox = document.getElementById("searchBox");
     const suggestions = document.getElementById("suggestions");
+    let hideTimeout;
+
+    // Function to start 2-second hide timer
+    function startHideTimer() {
+        clearTimeout(hideTimeout);
+        hideTimeout = setTimeout(() => {
+            suggestions.classList.add("hidden");
+        }, 2000); // 2 seconds
+    }
 
     searchBox.addEventListener("input", async function () {
         const query = this.value.trim();
@@ -241,16 +240,27 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         suggestions.classList.remove("hidden");
+        startHideTimer(); // restart hide timer whenever user types
     });
 
-    // Hide when clicking outside
+    // Keep suggestions visible while hovering
+    suggestions.addEventListener("mouseenter", () => {
+        clearTimeout(hideTimeout);
+    });
+    suggestions.addEventListener("mouseleave", () => {
+        startHideTimer();
+    });
+
+    // Hide and clear input when clicking outside
     document.addEventListener("click", function (e) {
         if (!searchBox.contains(e.target) && !suggestions.contains(e.target)) {
             suggestions.classList.add("hidden");
+            searchBox.value = ""; // clear input
         }
     });
 });
 </script>
+
 
 
 </body>
