@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-2xl font-bold mb-4">
+    Search results for "{{ query }}"
+  </h1>
+
+  {% if results %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {% for product in results %}
+        <div class="bg-white rounded-lg shadow p-4">
+          <img src="{{ url_for('static', filename='uploads/products/' + product[6]) if product[6] else 'https://via.placeholder.com/300' }}" 
+               alt="{{ product[2] }}" 
+               class="w-full h-48 object-cover mb-2 rounded">
+          <h2 class="font-semibold text-lg">{{ product[2] }}</h2>
+          <p class="text-gray-600">{{ product[3][:80] }}...</p>
+          <p class="font-bold text-primary">{{ format_currency(product[4]) }}</p>
+          <a href="{{ url_for('product_detail', product_id=product[0]) }}" 
+             class="inline-block mt-2 text-white bg-primary px-4 py-2 rounded">
+             View
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-gray-600">No products found.</p>
+  {% endif %}
+</div>
+{% endblock %}

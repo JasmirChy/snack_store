@@ -62,7 +62,27 @@
                 <!-- Search, Cart, Auth -->
                 <div class="flex items-center space-x-4">
                   
-                   <div class="hidden md:block relative">
+                    <!-- Search -->
+                    <div class="hidden md:block relative">
+                        <form action="{{ url_for('search') }}" method="get" class="relative">
+                            <input
+                                type="text"
+                                name="q"
+                                id="searchBox"
+                                placeholder="Search products..."
+                                autocomplete="off"
+                                class="pl-10 pr-4 py-2 w-32 md:w-40 rounded-full border border-gray-300
+                                    focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
+                                    transition-all duration-300 ease-in-out
+                                    hover:w-64 focus:w-64 relative z-50">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-50"></i>
+                        </form>
+
+                        <!-- Suggestions dropdown -->
+                        <div id="suggestions" class="absolute mt-1 w-full bg-white border rounded-md shadow-lg z-50 hidden"></div>
+                    </div>
+
+                   <!-- <div class="hidden md:block relative">
                         <input
                             type="text"
                             placeholder="Search products..."
@@ -72,7 +92,7 @@
                                 hover:w-64 focus:w-64
                                 relative z-50">
                         <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-50"></i>
-                    </div>
+                    </div> -->
 
                     <!-- Cart -->
                     <a href="{{ url_for('cart') }}" class="relative p-2 text-gray-700 hover:text-primary transition">
@@ -194,6 +214,44 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const searchBox = document.getElementById("searchBox");
+    const suggestions = document.getElementById("suggestions");
+
+    searchBox.addEventListener("input", async function () {
+        const query = this.value.trim();
+        if (!query) {
+            suggestions.classList.add("hidden");
+            return;
+        }
+
+        const response = await fetch(`/suggest?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+
+        if (data.length === 0) {
+            suggestions.innerHTML = "<div class='p-2 text-gray-500'>No results</div>";
+        } else {
+            suggestions.innerHTML = data.map(item => `
+                <div class="p-2 hover:bg-gray-100 cursor-pointer" 
+                     onclick="window.location='/product/${item.id}'">
+                    ${item.title}
+                </div>
+            `).join("");
+        }
+
+        suggestions.classList.remove("hidden");
+    });
+
+    // Hide when clicking outside
+    document.addEventListener("click", function (e) {
+        if (!searchBox.contains(e.target) && !suggestions.contains(e.target)) {
+            suggestions.classList.add("hidden");
+        }
+    });
+});
+</script>
+
 
 </body>
 </html>

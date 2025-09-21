@@ -1,6 +1,6 @@
 import os
 import config
-from flask import Flask,flash, render_template, request, redirect, url_for, flash, send_from_directory
+from flask import Flask,flash, render_template, request, redirect, url_for, flash, send_from_directory, jsonify
 from flask_mysqldb import MySQL
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -219,6 +219,45 @@ def admin_slider():
     items = cur.fetchall()
     cur.close()
     return render_template('admin/slider.html', items=items)
+
+@app.route('/suggest', methods=['GET'])
+def suggest():
+    query = request.args.get('q', '').strip()
+    if not query:
+        return jsonify([])
+
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT id, title 
+        FROM products 
+        WHERE title LIKE %s 
+        LIMIT 5
+    """, (f"%{query}%",))
+    results = cur.fetchall()
+    cur.close()
+
+    # Convert to list of dicts
+    suggestions = [{"id": r[0], "title": r[1]} for r in results]
+    return jsonify(suggestions)
+
+@app.route('/search')
+def search():
+    query = request.args.get('q', '').strip()
+    cur = mysql.connection.cursor()
+
+    if query:
+        cur.execute("""
+            SELECT * FROM products 
+            WHERE name LIKE %s OR description LIKE %s
+        """, (f"%{query}%", f"%{query}%"))
+        results = cur.fetchall()
+    else:
+        results = []
+
+    cur.close()
+
+    return render_template("search_results.html", query=query, results=results)
+
 
 @app.route('/admin/slider/add', methods=['POST'])
 @login_required
