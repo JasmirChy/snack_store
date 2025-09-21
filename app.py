@@ -248,7 +248,7 @@ def search():
     if query:
         cur.execute("""
             SELECT * FROM products 
-            WHERE name LIKE %s OR description LIKE %s
+            WHERE title LIKE %s OR description LIKE %s
         """, (f"%{query}%", f"%{query}%"))
         results = cur.fetchall()
     else:
