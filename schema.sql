@@ -82,18 +82,6 @@ CREATE TABLE settings (
     key_name VARCHAR(50) UNIQUE NOT NULL,
     value TEXT NOT NULL
 );
-
-CREATE TABLE reviews (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    product_id INT NOT NULL,
-    rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
-    comment TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
-);
-
 -- Insert sample data
 INSERT INTO categories (name) VALUES 
 ('Chips'), 
