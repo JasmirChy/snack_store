@@ -3,74 +3,56 @@
 {% block content %}
 
 <!-- Slider Section -->
-<div class="slider-container">
+<div class="slider-container relative z-10">
   <div class="slider-wrapper" id="sliderWrapper">
     {% for item in slider_items %}
-      <div class="slide">
+      <div class="slide relative w-full">
         {% if item[1] == 'image' %}
-          <img src="{{ url_for('static', filename=item[2]) }}" alt="{{ item[3] }}">
+          <img src="{{ url_for('static', filename=item[2]) }}" alt="{{ item[3] }}" class="w-full h-500 object-cover">
         {% elif item[1] == 'video' %}
-          <video autoplay muted loop>
+          <video autoplay muted loop class="w-full h-500 object-cover">
             <source src="{{ url_for('static', filename=item[2]) }}" type="video/mp4">
           </video>
         {% endif %}
-        <div class="slide-text ">
-          <h2>{{ item[3] }}</h2>
-          <p>{{ item[4] }}</p>
+        <div class="slide-text absolute top-1/2 left-15 transform -translate-y-1/2 bg-transparent p-0">
+          <h2 class="text-3xl text-[#d55d21] font-extrabold font-montserrat">{{ item[3] }}</h2>
+          <p class="text-xl text-[#c2633e]">{{ item[4] }}</p>
         </div>
       </div>
     {% endfor %}
   </div>
+</div>
+
 <script>
-  let index = 0;
-  function showSlide(i) {
+let index = 0;
+function showSlide(i) {
     const wrapper = document.getElementById('sliderWrapper');
     const slides = document.querySelectorAll('.slide');
-    if (i >= slides.length) index = 0;
-    if (i < 0) index = slides.length - 1;
+    if(i >= slides.length) index = 0;
+    if(i < 0) index = slides.length - 1;
     wrapper.style.transform = 'translateX(' + (-index * 100) + '%)';
-  }
-  function nextSlide() { index++; showSlide(index); }
-  function prevSlide() { index--; showSlide(index); }
-  setInterval(nextSlide, 5000); // auto slide every 5s
+}
+function nextSlide() { index++; showSlide(index); }
+function prevSlide() { index--; showSlide(index); }
+setInterval(nextSlide, 5000); // auto slide every 5s
 </script>
 
 <style>
-  .slider-container { position: relative; width: 100%; height: 500px; overflow: hidden; }
-  .slider-wrapper { display: flex; transition: transform 0.5s ease-in-out; }
-  .slide { min-width: 100%; position: relative; color: white; }
-  .slide img, .slide video { width: 100%; height: 500px; object-fit: cover; }
-  .slide-text { position: absolute; bottom: 50px; left: 50px; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 10px; }
-  .slide-text {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  left: 15%;
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
-}
-.slide-text h2 {
-  font-size: 3em;
-  color: rgb(213, 93, 33);
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 1000;
-}
-.slide-text p {
-  font-size: 1.5em;
-  color: rgb(194, 99, 62);
-}
-  .slider-controls { position: absolute; top: 50%; width: 100%; display: flex; justify-content: space-between; transform: translateY(-50%); }
-  .slider-controls button { background: rgba(0,0,0,0.6); border: none; color: white; padding: 10px; cursor: pointer; border-radius: 50%; }
+.slider-container { width: 100%; height: 500px; overflow: hidden; }
+.slider-wrapper { display: flex; transition: transform 0.5s ease-in-out; }
+.slide { min-width: 100%; position: relative; color: white; transition: opacity 0.5s ease-in-out; }
+.slide img, .slide video { width: 100%; height: 500px; object-fit: cover; }
+.slide-text h2 { font-size: 3em; }
+.slide-text p { font-size: 1.5em; }
 </style>
 
 <!-- Featured Products Section -->
-<section class="container mx-auto px-4 py-12">
+<section class="container mx-auto px-4 py-12 relative z-1">
     <h2 class="text-3xl font-bold text-center mb-8">Our Products</h2>
 
     <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {% for product in products %}
-        <div class="product-item bg-[#fffae1] rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 cursor-pointer clickable-product hidden"
+        <div class="product-item bg-[#fffae1] rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 cursor-pointer clickable-product"
              onclick="window.location='{{ url_for('product_detail', product_id=product[0]) }}'">
             <div class="relative">
                 <img src="{{ url_for('static', filename='uploads/products/' + product[6]) if product[6] else 'https://via.placeholder.com/300' }}" alt="{{ product[2] }}" class="w-full h-48 object-cover">
@@ -100,27 +82,19 @@
     </div>
 
     <div class="text-center mt-6 space-x-2">
-        <button id="viewMoreBtn" class="bg-primary hover:bg-blue-700 text-white px-6 py-2 rounded-md transition hidden">
-            View More
-        </button>
-        <button id="viewLessBtn" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-md transition hidden">
-            View Less
-        </button>
+        <button id="viewMoreBtn" class="bg-primary hover:bg-blue-700 text-white px-6 py-2 rounded-md transition hidden">View More</button>
+        <button id="viewLessBtn" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-md transition hidden">View Less</button>
     </div>
 </section>
-<section class="py-10 bg-[#fff5ca]">
+
+<!-- Customer Reviews Section -->
+<section class="py-10 bg-[#fff5ca] relative z-1">
  <div class="bg-[#fffae1] rounded-lg shadow-md p-6 mb-8 relative">
   <h2 class="text-2xl font-bold text-center mb-6">Customer Reviews</h2>
 
-  <!-- Scroll buttons -->
-  <button id="scrollLeft" class="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-700 text-white rounded-full p-2 shadow hover:bg-gray-900">
-    &#8592;
-  </button>
-  <button id="scrollRight" class="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-700 text-white rounded-full p-2 shadow hover:bg-gray-900">
-    &#8594;
-  </button>
+  <button id="scrollLeft" class="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-700 text-white rounded-full p-2 shadow hover:bg-gray-900">&#8592;</button>
+  <button id="scrollRight" class="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-700 text-white rounded-full p-2 shadow hover:bg-gray-900">&#8594;</button>
 
-  <!-- Review Container -->
   <div id="reviewContainer" class="flex space-x-6 overflow-x-auto scroll-smooth pb-4">
     {% for review in reviews %}
       <div class="min-w-[300px] sm:min-w-[400px] bg-white rounded-lg shadow-md overflow-hidden">
@@ -143,7 +117,7 @@
 </section>
 
 <!-- Features Section -->
-<section class="bg-[#e6dbac] py-12">
+<section class="bg-[#e6dbac] py-12 relative z-1">
     <div class="container mx-auto px-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div class="text-center">
@@ -151,8 +125,7 @@
                     <i class="fas fa-history text-white text-2xl"></i>
                 </div>
                 <h3 class="text-xl font-semibold mb-2">Sustaining Heritage</h3>
-                <p class="text-gray-600">
-We use sustainable practices to honor the land and cultural traditions of Nepal, preserving the authentic, traditional foods you love.</p>
+                <p class="text-gray-600">We use sustainable practices to honor the land and cultural traditions of Nepal, preserving the authentic, traditional foods you love.</p>
             </div>
             <div class="text-center">
                 <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
@@ -172,77 +145,7 @@ We use sustainable practices to honor the land and cultural traditions of Nepal,
     </div>
 </section>
 
-<!-- Simple Slider JavaScript -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const slides = document.querySelectorAll('.slide');
-    const dots = document.querySelectorAll('.dot-button');
-    const prevBtn = document.querySelector('.slider-prev');
-    const nextBtn = document.querySelector('.slider-next');
-    
-    if (slides.length === 0) return;
-    
-    let currentIndex = 0;
-    let interval;
-    
-    // Show specific slide
-    function showSlide(index) {
-        slides.forEach(slide => slide.style.opacity = '0');
-        dots.forEach(dot => dot.classList.remove('bg-opacity-100'));
-        
-        slides[index].style.opacity = '1';
-        if (dots[index]) dots[index].classList.add('bg-opacity-100');
-        currentIndex = index;
-    }
-    
-    // Next slide
-    function nextSlide() {
-        let next = currentIndex + 1;
-        if (next >= slides.length) next = 0;
-        showSlide(next);
-    }
-    
-    // Start auto-slide
-    function startSlider() {
-        if (slides.length > 1) {
-            interval = setInterval(nextSlide, 5000);
-        }
-    }
-    
-    // Initialize
-    showSlide(0);
-    startSlider();
-    
-    // Navigation events
-    if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-            clearInterval(interval);
-            nextSlide();
-            startSlider();
-        });
-    }
-    
-    if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
-            clearInterval(interval);
-            let prev = currentIndex - 1;
-            if (prev < 0) prev = slides.length - 1;
-            showSlide(prev);
-            startSlider();
-        });
-    }
-    
-    // Dot navigation
-    dots.forEach((dot, index) => {
-        dot.addEventListener('click', () => {
-            clearInterval(interval);
-            showSlide(index);
-            startSlider();
-        });
-    });
-});
-</script>
-
+<!-- JavaScript for Reviews Scroll & Toggle Sound -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const container = document.getElementById("reviewContainer");
@@ -253,11 +156,10 @@ document.addEventListener("DOMContentLoaded", () => {
     container.scrollBy({ left: 400, behavior: "smooth" });
   });
 
-  // Toggle mute/unmute
   document.querySelectorAll(".toggle-sound").forEach((btn) => {
     btn.addEventListener("click", () => {
       const video = btn.closest("div").previousElementSibling;
-      if (video.muted) {
+      if(video.muted){
         video.muted = false;
         btn.textContent = "Mute";
         btn.classList.remove("bg-blue-500");
@@ -272,6 +174,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 </script>
+
+<!-- JavaScript for Product Show More/Less -->
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     const allProducts = document.querySelectorAll("#productGrid .product-item");
@@ -286,23 +190,18 @@ document.addEventListener("DOMContentLoaded", function() {
 
     function showProducts() {
         allProducts.forEach((item, index) => {
-            item.classList.toggle('hidden', index >= visibleCount);
+            item.style.display = index < visibleCount ? 'block' : 'none';
         });
 
-        if (visibleCount >= allProducts.length) {
-            viewMoreBtn.style.display = "none";
-            viewLessBtn.style.display = visibleCount > initialShowCount() ? "inline-block" : "none";
-        } else {
-            viewMoreBtn.style.display = "inline-block";
-            viewLessBtn.style.display = visibleCount > initialShowCount() ? "inline-block" : "none";
-        }
+        viewMoreBtn.style.display = visibleCount >= allProducts.length ? 'none' : 'inline-block';
+        viewLessBtn.style.display = visibleCount > initialShowCount() ? 'inline-block' : 'none';
     }
 
     showProducts();
 
     viewMoreBtn.addEventListener("click", () => {
         visibleCount += 4;
-        if (visibleCount > allProducts.length) visibleCount = allProducts.length;
+        if(visibleCount > allProducts.length) visibleCount = allProducts.length;
         showProducts();
     });
 
@@ -319,9 +218,4 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
-<style>
-.slide {
-    transition: opacity 0.5s ease-in-out;
-}
-</style>
 {% endblock %}
