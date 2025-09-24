@@ -50,10 +50,13 @@ CREATE TABLE orders (
     address TEXT NOT NULL,
     payment_method ENUM('cod', 'online') NOT NULL,
     payment_proof VARCHAR(255),
-    status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
+    status ENUM('pending','confirmed', 'packed', 'shipped','out_of_delivery', 'delivered', 'cancelled') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+ALTER TABLE orders
+ADD COLUMN tracking_number VARCHAR(100) AFTER payment_proof;
+
 
 -- Order items table
 CREATE TABLE order_items (
@@ -75,6 +78,14 @@ CREATE TABLE banners (
     active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE slider_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    type ENUM('image','video') NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    title VARCHAR(100),
+    details TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Settings table
 CREATE TABLE settings (
@@ -82,6 +93,39 @@ CREATE TABLE settings (
     key_name VARCHAR(50) UNIQUE NOT NULL,
     value TEXT NOT NULL
 );
+
+
+-- Payments table
+CREATE TABLE payments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    user_id INT NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    method ENUM('cod', 'online') NOT NULL,
+    proof VARCHAR(255), -- stores receipt image / transaction id screenshot
+    status ENUM('pending', 'completed', 'failed') DEFAULT 'pending',
+    transaction_id VARCHAR(100), -- optional, store gateway txn ID
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+
+-- CREATE TABLE reviews (
+--     id INT AUTO_INCREMENT PRIMARY KEY,
+--     type ENUM('image', 'video') NOT NULL,
+--     file_path VARCHAR(255) NOT NULL,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- );
+
+CREATE TABLE reviews (
+id INT AUTO_INCREMENT PRIMARY KEY,
+type ENUM('image', 'video') NOT NULL,
+file_path VARCHAR(255) NOT NULL,
+video varchar(255) NOT NULL,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Insert sample data
 INSERT INTO categories (name) VALUES 
 ('Chips'), 
@@ -103,4 +147,4 @@ INSERT INTO settings (key_name, value) VALUES
 
 -- Create admin user (password: admin123)
 INSERT INTO users (name, email, password_hash, is_admin) VALUES 
-('Admin User', 'admin@snackstore.com', '$2b$12$r8zY8U6nYkL7k3w9V2p0E.XpJZ4nY4nY4nY4nY4nY4nY4nY4nY4nY', TRUE);
+('Admin ', 'jasmirchy@gmail.com', '$2a$12$AEI6LcLJyquViKBTe5h9DOM.bN3cPV/BmlPUpWbt73liCBSvwC9Ty', TRUE);

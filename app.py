@@ -70,7 +70,7 @@ def send_customer_order_status_email(to_email, customer_name, order_id, status, 
 
     Your order is {friendly_status}{tracking_info}
 
-    Thank you for shopping with Swad Galli!
+    Thank you for shopping with SwadGaLLi!
     """
 
     msg = MIMEMultipart()
@@ -307,6 +307,8 @@ def admin_delete_slider(item_id):
     return redirect(url_for('admin_slider'))
 
 # Routes
+
+
 @app.route('/')
 def index():
     cur = mysql.connection.cursor()
@@ -315,6 +317,7 @@ def index():
     cur.execute("SELECT * FROM banners WHERE active = TRUE ORDER BY created_at DESC")
     banners = cur.fetchall()
 
+    # Get slider items
     cur.execute("SELECT * FROM slider_items ORDER BY created_at DESC")
     slider_items = cur.fetchall()
     
@@ -322,9 +325,117 @@ def index():
     cur.execute("SELECT * FROM products WHERE stock > 0 ORDER BY created_at DESC LIMIT 8")
     products = cur.fetchall()
     
+    # 🔥 Get reviews (important!)
+    cur.execute("SELECT id, type, file_path FROM reviews ORDER BY created_at DESC")
+    reviews = cur.fetchall()
+    
     cur.close()
     
-    return render_template('index.html',slider_items=slider_items, banners=banners, products=products)
+    return render_template(
+        'index.html',
+        slider_items=slider_items,
+        banners=banners,
+        products=products,
+        reviews=reviews   # 👈 pass reviews to template
+    )
+
+
+# @app.route('/')
+# def index():
+#     cur = mysql.connection.cursor()
+    
+#     # Get all active banners for the slider
+#     cur.execute("SELECT * FROM banners WHERE active = TRUE ORDER BY created_at DESC")
+#     banners = cur.fetchall()
+
+#     cur.execute("SELECT * FROM slider_items ORDER BY created_at DESC")
+#     slider_items = cur.fetchall()
+    
+#     # Get products
+#     cur.execute("SELECT * FROM products WHERE stock > 0 ORDER BY created_at DESC LIMIT 8")
+#     products = cur.fetchall()
+    
+#     cur.close()
+    
+#     return render_template('index.html',slider_items=slider_items, banners=banners, products=products)
+# =========================
+# Review Management Routes
+# =========================
+# View all reviews
+@app.route('/admin/reviews')
+@login_required
+def admin_reviews():
+    if not current_user.is_admin:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT id, type, file_path, created_at FROM reviews ORDER BY created_at DESC")
+    reviews = cur.fetchall()
+    cur.close()
+    return render_template('admin/reviews.html', reviews=reviews)
+
+
+# Add review
+@app.route('/admin/reviews/add', methods=['POST'])
+@login_required
+def admin_add_review():
+    if not current_user.is_admin:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+
+    file = request.files['file']
+    rtype = request.form.get('type')
+
+    if not file or file.filename == '':
+        flash("No file selected", "error")
+        return redirect(url_for('admin_reviews'))
+
+    if not allowed_file(file.filename):
+        flash("File type not allowed", "error")
+        return redirect(url_for('admin_reviews'))
+
+    # Check file size
+    file.seek(0, os.SEEK_END)
+    file_length = file.tell()
+    file.seek(0)
+    if file_length > 20 * 1024 * 1024:  # 20 MB
+        flash("File size exceeds 20 MB", "error")
+        return redirect(url_for('admin_reviews'))
+
+    # Save file
+    filename = secure_filename(f"{uuid.uuid4().hex}_{file.filename}")
+    folder = os.path.join(app.config['UPLOAD_FOLDER'], 'reviews')
+    os.makedirs(folder, exist_ok=True)
+    filepath = os.path.join(folder, filename)
+    file.save(filepath)
+
+    db_path = f"uploads/reviews/{filename}"
+
+    cur = mysql.connection.cursor()
+    cur.execute("INSERT INTO reviews (type, file_path) VALUES (%s, %s)", (rtype, db_path))
+    mysql.connection.commit()
+    cur.close()
+
+    flash("Review uploaded successfully", "success")
+    return redirect(url_for('admin_reviews'))
+
+
+# Delete review
+@app.route('/admin/reviews/delete/<int:review_id>')
+@login_required
+def admin_delete_review(review_id):
+    if not current_user.is_admin:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM reviews WHERE id = %s", (review_id,))
+    mysql.connection.commit()
+    cur.close()
+
+    flash("Review deleted successfully", "info")
+    return redirect(url_for('admin_reviews'))
 
 @app.route('/products')
 def products():

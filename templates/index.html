@@ -68,13 +68,14 @@
   .slider-controls button { background: rgba(0,0,0,0.6); border: none; color: white; padding: 10px; cursor: pointer; border-radius: 50%; }
 </style>
 
-
 <!-- Featured Products Section -->
 <section class="container mx-auto px-4 py-12">
     <h2 class="text-3xl font-bold text-center mb-8">Our Products</h2>
-    <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+    <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {% for product in products %}
-        <div class="bg-[#fffae1] rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 cursor-pointer clickable-product" onclick="window.location='{{ url_for('product_detail', product_id=product[0]) }}'">
+        <div class="product-item bg-[#fffae1] rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 cursor-pointer clickable-product hidden"
+             onclick="window.location='{{ url_for('product_detail', product_id=product[0]) }}'">
             <div class="relative">
                 <img src="{{ url_for('static', filename='uploads/products/' + product[6]) if product[6] else 'https://via.placeholder.com/300' }}" alt="{{ product[2] }}" class="w-full h-48 object-cover">
                 {% if product[5] == 0 %}
@@ -101,6 +102,48 @@
         </div>
         {% endfor %}
     </div>
+
+    <div class="text-center mt-6 space-x-2">
+        <button id="viewMoreBtn" class="bg-primary hover:bg-blue-700 text-white px-6 py-2 rounded-md transition hidden">
+            View More
+        </button>
+        <button id="viewLessBtn" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-md transition hidden">
+            View Less
+        </button>
+    </div>
+</section>
+<section class="py-10 bg-[#fff5ca]">
+ <div class="bg-[#fffae1] rounded-lg shadow-md p-6 mb-8 relative">
+  <h2 class="text-2xl font-bold text-center mb-6">Customer Reviews</h2>
+
+  <!-- Scroll buttons -->
+  <button id="scrollLeft" class="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-700 text-white rounded-full p-2 shadow hover:bg-gray-900">
+    &#8592;
+  </button>
+  <button id="scrollRight" class="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-700 text-white rounded-full p-2 shadow hover:bg-gray-900">
+    &#8594;
+  </button>
+
+  <!-- Review Container -->
+  <div id="reviewContainer" class="flex space-x-6 overflow-x-auto scroll-smooth pb-4">
+    {% for review in reviews %}
+      <div class="min-w-[300px] sm:min-w-[400px] bg-white rounded-lg shadow-md overflow-hidden">
+        {% if review[1] == 'image' %}
+          <img src="{{ url_for('static', filename=review[2]) }}" class="w-full h-64 object-cover">
+        {% elif review[1] == 'video' %}
+          <video class="w-full h-64 object-cover review-video" autoplay muted loop playsinline controlslist="nodownload">
+            <source src="{{ url_for('static', filename=review[2]) }}" type="video/mp4">
+          </video>
+          <div class="flex justify-center py-2">
+            <button class="toggle-sound bg-blue-500 text-white px-3 py-1 rounded-md">Unmute</button>
+          </div>
+        {% endif %}
+      </div>
+    {% else %}
+      <p class="text-gray-500 text-center">No reviews yet.</p>
+    {% endfor %}
+  </div>
+</div>
 </section>
 
 <!-- Features Section -->
@@ -200,6 +243,82 @@ document.addEventListener('DOMContentLoaded', function() {
             showSlide(index);
             startSlider();
         });
+    });
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const container = document.getElementById("reviewContainer");
+  document.getElementById("scrollLeft").addEventListener("click", () => {
+    container.scrollBy({ left: -400, behavior: "smooth" });
+  });
+  document.getElementById("scrollRight").addEventListener("click", () => {
+    container.scrollBy({ left: 400, behavior: "smooth" });
+  });
+
+  // Toggle mute/unmute
+  document.querySelectorAll(".toggle-sound").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const video = btn.closest("div").previousElementSibling;
+      if (video.muted) {
+        video.muted = false;
+        btn.textContent = "Mute";
+        btn.classList.remove("bg-blue-500");
+        btn.classList.add("bg-red-500");
+      } else {
+        video.muted = true;
+        btn.textContent = "Unmute";
+        btn.classList.remove("bg-red-500");
+        btn.classList.add("bg-blue-500");
+      }
+    });
+  });
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const allProducts = document.querySelectorAll("#productGrid .product-item");
+    const viewMoreBtn = document.getElementById("viewMoreBtn");
+    const viewLessBtn = document.getElementById("viewLessBtn");
+
+    function initialShowCount() {
+        return window.innerWidth >= 1024 ? 8 : 4;
+    }
+
+    let visibleCount = initialShowCount();
+
+    function showProducts() {
+        allProducts.forEach((item, index) => {
+            item.classList.toggle('hidden', index >= visibleCount);
+        });
+
+        if (visibleCount >= allProducts.length) {
+            viewMoreBtn.style.display = "none";
+            viewLessBtn.style.display = visibleCount > initialShowCount() ? "inline-block" : "none";
+        } else {
+            viewMoreBtn.style.display = "inline-block";
+            viewLessBtn.style.display = visibleCount > initialShowCount() ? "inline-block" : "none";
+        }
+    }
+
+    showProducts();
+
+    viewMoreBtn.addEventListener("click", () => {
+        visibleCount += 4;
+        if (visibleCount > allProducts.length) visibleCount = allProducts.length;
+        showProducts();
+    });
+
+    viewLessBtn.addEventListener("click", () => {
+        visibleCount = initialShowCount();
+        showProducts();
+        window.scrollTo({ top: document.getElementById("productGrid").offsetTop - 100, behavior: "smooth" });
+    });
+
+    window.addEventListener('resize', () => {
+        visibleCount = Math.max(initialShowCount(), visibleCount);
+        showProducts();
     });
 });
 </script>

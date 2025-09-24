@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">Manage Reviews</h1>
+
+    <!-- Add Review Form -->
+    <div class="bg-[#fffae1] rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-lg font-semibold mb-4">Add New Review</h2>
+        <form action="{{ url_for('admin_add_review') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium">Type</label>
+                <select name="type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <option value="video">Video</option>
+                    <option value="image">Image</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium">Upload File (Max 20 MB)</label>
+                <input type="file" name="file" accept="video/*,image/*" class="mt-1 block w-full text-sm border rounded-md p-2">
+            </div>
+
+            <button type="submit" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md transition">
+                Upload Review
+            </button>
+        </form>
+    </div>
+
+    <!-- Review Cards -->
+    <h2 class="text-lg font-semibold mb-4">All Reviews</h2>
+
+    <div class="relative">
+        <button id="scroll-left" class="absolute left-0 top-1/2 -translate-y-1/2 bg-gray-200 px-3 py-2 rounded z-10 hover:bg-gray-300 transition">
+            &#8592;
+        </button>
+
+        <div id="review-container" class="flex overflow-x-auto gap-6 scroll-smooth py-4">
+            {% if reviews %}
+                {% for review in reviews %}
+                <div class="flex-shrink-0 w-80 bg-white rounded-lg shadow-md overflow-hidden">
+                    {% if review[1] == 'image' %}
+                        <img src="{{ url_for('static', filename=review[2]) }}" class="w-full h-48 object-cover">
+                    {% elif review[1] == 'video' %}
+                        <video controls autoplay muted loop class="w-full h-48 object-cover">
+                            <source src="{{ url_for('static', filename=review[2]) }}" type="video/mp4">
+                        </video>
+                    {% endif %}
+                    <div class="p-4 flex flex-col justify-center items-center text-center">
+                        <p class="text-gray-600 text-sm">Uploaded {{ review[3] }}</p>
+                        <a href="{{ url_for('admin_delete_review', review_id=review[0]) }}" 
+                           class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm mt-2">
+                           Delete
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-gray-500">No reviews uploaded yet.</p>
+            {% endif %}
+        </div>
+
+        <button id="scroll-right" class="absolute right-0 top-1/2 -translate-y-1/2 bg-gray-200 px-3 py-2 rounded z-10 hover:bg-gray-300 transition">
+            &#8594;
+        </button>
+    </div>
+</div>
+
+<script>
+document.getElementById('scroll-left').onclick = () => {
+    document.getElementById('review-container').scrollBy({left: -300, behavior: 'smooth'});
+};
+document.getElementById('scroll-right').onclick = () => {
+    document.getElementById('review-container').scrollBy({left: 300, behavior: 'smooth'});
+};
+</script>
+{% endblock %}
