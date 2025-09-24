@@ -27,17 +27,29 @@
         .clickable-product:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    }
+        }
+         @media (max-width: 768px) {
+            .slider-container,
+            .slider-container img,
+            .slider-container video {
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto !important;
+                object-fit: cover;
+            }
+        }
     </style>
 </head>
 <body class="bg-[#fff5ca] flex flex-col min-h-screen">
 <!-- Header -->
-<header class="sticky top-0 z-50 bg-[#fff5ca] shadow-md">
+<header class="sticky top-0 z-50 bg-[#fff5ca] shadow-md " style="min-height: 80px">
     <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+        
         <!-- Logo -->
         <a href="{{ url_for('index') }}" class="flex items-center space-x-2">
-            <span class="text-2xl font-bold text-primary">SwadGalli</span>
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="SwadGalli Logo" class="h-16 w-auto">
         </a>
+
 
         <!-- Desktop Navigation -->
         <nav class="hidden md:flex items-center space-x-6">
