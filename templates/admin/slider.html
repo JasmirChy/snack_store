@@ -1,242 +1,68 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Manage Slider</title>
-  
-  <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#3B82F6',
-                        secondary: '#10B981',
-                        accent: '#F59E0B',
-                    }
-                }
-            }
-        }
-    </script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #fff5ca;
-      margin: 0;
-      padding: 20px;
-      color: #333;
-    }
-    h2, h3 {
-      text-align: center;
-      color: #444;
-    }
-    .form-container {
-      max-width: 600px;
-      margin: 20px auto;
-      background: #fff;
-      padding: 25px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    label {
-      font-weight: bold;
-      margin-top: 10px;
-      display: block;
-      color: #555;
-    }
-    select, input[type="file"], input[type="text"], textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 14px;
-      box-sizing: border-box;
-    }
-    textarea {
-      min-height: 80px;
-      resize: vertical;
-    }
-    button {
-      margin-top: 15px;
-      width: 100%;
-      padding: 12px;
-      background: #007bff;
-      color: white;
-      font-size: 16px;
-      font-weight: bold;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    .items-list {
-      max-width: 700px;
-      margin: 30px auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    .items-list ul {
-      list-style: none;
-      padding: 0;
-    }
-    .items-list li {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #fafafa;
-      padding: 12px 15px;
-      margin-bottom: 10px;
-      border-radius: 6px;
-      border: 1px solid #eee;
-    }
-    .items-list li strong {
-      color: #333;
-    }
-    .items-list a {
-      text-decoration: none;
-      color: #dc3545;
-      font-weight: bold;
-      transition: color 0.2s;
-    }
-    .items-list a:hover {
-      color: #a71d2a;
-    }
-    
-        .clickable-product {
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .clickable-product:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    }
-  
-  </style>
-</head>
-<body>
- <!-- Header -->
-    <header class="sticky top-0 z-50 g-[#fff5ca] shadow-md">
-        <div class="container mx-auto px-4 py-3">
-            <div class="flex items-center justify-between">
-                <!-- Logo -->
-                <a href="{{ url_for('index') }}" class="flex items-center space-x-2">
-                    <span class="text-2xl font-bold text-primary">SwadGalli</span>
-                </a>
+{% extends "base.html" %}
 
-                <!-- Navigation -->
-                <nav class="hidden md:flex space-x-8">
-                    <a href="{{ url_for('index') }}" class="text-gray-700 ml-4 hover:text-primary transition">Home</a>
-                    <!-- <a href="{{ url_for('products') }}" class="text-gray-700 hover:text-primary transition">Products</a> -->
-                    
-                    <!-- Categories Dropdown -->
-                    <div class="relative group">
-                        <button class="text-gray-700 mr-4 hover:text-primary transition flex items-center">
-                            Categories
-                            <i class="fas fa-chevron-down ml-1 text-xs"></i>
-                        </button>
-                        <div class="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                            {% for category in categories %}
-                            <a href="{{ url_for('products', category=category[0]) }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">{{ category[1] }}</a>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </nav>
+{% block title %}Manage Slider - Snack Store{% endblock %}
 
-                <!-- Search, Cart, Auth -->
-                <div class="flex items-center space-x-4">
-                    <!-- Search -->
-                    <!-- <div class="hidden md:block relative">
-                        <input type="text" placeholder="Search..." class="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                    </div> -->
+{% block content %}
+<div class="container mx-auto px-4 py-8">
 
-                    <!-- Cart -->
-                    <a href="{{ url_for('cart') }}" class="relative p-2 text-gray-700 hover:text-primary transition">
-                        <i class="fas fa-shopping-cart text-xl"></i>
-                        {% if cart_count > 0 %}
-                        <span class="absolute -top-1 -right-1 bg-accent text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">{{ cart_count }}</span>
-                        {% endif %}
-                    </a>
+  <h2 class="text-3xl font-bold text-center text-gray-700 mb-6">Manage Slider</h2>
 
-                    <!-- Auth -->
-                    {% if current_user.is_authenticated %}
-                    <div class="relative group">
-                        <button class="flex items-center space-x-2 focus:outline-none">
-                            <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">
-                                {{ current_user.name[0] }}
-                            </div>
-                            <span class="hidden md:block text-gray-700">{{ current_user.name }}</span>
-                        </button>
-                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                            <a href="{{ url_for('orders') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">My Orders</a>
-                            {% if current_user.is_admin %}
-                            <a href="{{ url_for('admin_dashboard') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Admin Panel</a>
-                            {% endif %}
-                            <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Logout</a>
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="flex items-center space-x-2">
-                        <a href="{{ url_for('login') }}" class="text-gray-700 hover:text-primary transition">Login</a>
-                        <span class="text-gray-300">|</span>
-                        <a href="{{ url_for('register') }}" class="text-gray-700 hover:text-primary transition">Register</a>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
+  <!-- Add Slider Form -->
+  <div class="form-container bg-[#fffae1] max-w-2xl mx-auto rounded-lg shadow-md p-6">
+    <form action="{{ url_for('admin_add_slider') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+      
+      <div>
+        <label class="font-semibold text-gray-700">Type:</label>
+        <select name="type" required 
+          class="w-full p-2 border rounded-md focus:ring-2 focus:ring-primary focus:outline-none">
+          <option value="image">Image</option>
+          <option value="video">Video</option>
+        </select>
+      </div>
 
-            <!-- Mobile search -->
-            <div class="mt-3 md:hidden">
-                <input type="text" placeholder="Search..." class="w-full px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-            </div>
-        </div>
-    </header>
+      <div>
+        <label class="font-semibold text-gray-700">File:</label>
+        <input type="file" name="file" required
+          class="w-full p-2 border rounded-md focus:ring-2 focus:ring-primary focus:outline-none">
+      </div>
 
-  <h2 class="mt-4"><b>Manage Slider</b></h2>
+      <div>
+        <label class="font-semibold text-gray-700">Title:</label>
+        <input type="text" name="title"
+          class="w-full p-2 border rounded-md focus:ring-2 focus:ring-primary focus:outline-none">
+      </div>
 
-  <div class="form-container bg-[#fffae1]">
-    <form action="{{ url_for('admin_add_slider') }}" method="POST" enctype="multipart/form-data">
-      <label>Type:</label>
-      <select name="type" required>
-        <option value="image">Image</option>
-        <option value="video">Video</option>
-      </select>
+      <div>
+        <label class="font-semibold text-gray-700">Details:</label>
+        <textarea name="details" 
+          class="w-full p-2 border rounded-md focus:ring-2 focus:ring-primary focus:outline-none min-h-[80px]"></textarea>
+      </div>
 
-      <label>File:</label>
-      <input type="file" name="file" required>
-
-      <label>Title:</label>
-      <input type="text" name="title">
-
-      <label>Details:</label>
-      <textarea name="details"></textarea>
-
-      <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-200 font-semibold">Add Slider Item</button>
+      <button type="submit"
+        class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-200 font-semibold">
+        Add Slider Item
+      </button>
     </form>
   </div>
 
-  <div class="items-list bg-[#fffae1]">
-    <h3>Existing Items</h3>
-    <ul>
+  <!-- Existing Items -->
+  <div class="items-list bg-[#fffae1] max-w-3xl mx-auto mt-10 rounded-lg shadow-md p-6">
+    <h3 class="text-2xl font-semibold text-center text-gray-700 mb-4">Existing Items</h3>
+    <ul class="space-y-3">
       {% for item in items %}
-        <li>
-          <div>
-            <strong>{{ item[3] }}</strong> ({{ item[1] }})
-          </div>
-          <div>
-            <a href="{{ url_for('admin_delete_slider', item_id=item[0]) }}">Delete</a>
-          </div>
-        </li>
+      <li class="flex justify-between items-center bg-white px-4 py-3 rounded-md shadow-sm border">
+        <div>
+          <strong class="text-gray-800">{{ item[3] }}</strong>
+          <span class="text-sm text-gray-500">({{ item[1] }})</span>
+        </div>
+        <a href="{{ url_for('admin_delete_slider', item_id=item[0]) }}" 
+           class="text-red-600 hover:text-red-800 font-semibold">
+          Delete
+        </a>
+      </li>
       {% endfor %}
     </ul>
   </div>
 
-</body>
-</html>
+</div>
+{% endblock %}

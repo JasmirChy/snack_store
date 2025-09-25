@@ -4,45 +4,53 @@
 <div class="container mx-auto px-4 py-8">
     <div class="bg-[#fffae1] rounded-lg shadow-md overflow-hidden">
         <div class="md:flex">
+            
+            <!-- Product Image -->
             <div class="md:w-1/2">
-                <img src="{{ url_for('static', filename='uploads/products/' + product[6]) if product[6] else 'https://via.placeholder.com/500' }}" alt="{{ product[2] }}" class="w-full h-96 object-cover">
+                <img src="{{ url_for('static', filename='uploads/products/' + product[6]) if product[6] else 'https://via.placeholder.com/500' }}" 
+                     alt="{{ product[2] }}" 
+                     class="w-full h-96 object-cover transition-transform duration-300 hover:scale-105">
             </div>
+
+            <!-- Product Info -->
             <div class="md:w-1/2 p-6">
                 <h1 class="text-3xl font-bold mb-4">{{ product[2] }}</h1>
                 <p class="text-primary font-bold text-2xl mb-4">{{ format_currency(product[4]) }}</p>
-                <p class="text-gray-600 mb-6">{{ product[3] }}</p>
-                
+
+                <!-- Availability -->
                 <div class="mb-6">
                     <span class="text-gray-700">Availability:</span>
                     {% if product[5] > 0 %}
-                    <span class="text-green-600 font-semibold">In Stock ({{ product[5] }} available)</span>
+                        <span class="text-green-600 font-semibold">In Stock ({{ product[5] }} available)</span>
                     {% else %}
-                    <span class="text-red-600 font-semibold">Out of Stock</span>
+                        <span class="text-red-600 font-semibold">Out of Stock</span>
                     {% endif %}
                 </div>
-                
+
+                <!-- Quantity & Actions -->
                 {% if product[5] > 0 %}
-                <!-- Replace the quantity section with this enhanced version -->
-                    <div class="mb-6">
-                        <label class="block text-gray-700 mb-2">Quantity:</label>
-                        <div class="flex items-center">
-                          
-                            
-                            <!-- Quantity Input -->
-                            <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ product[5] }}" 
-                                class="w-20 px-3 py-2 border-t border-b border-gray-300 text-center focus:outline-none focus:ring-2 focus:ring-primary font-semibold">
-                            
+                <div class="mb-6">
+                    <label for="quantity" class="block text-gray-700 mb-2">Quantity:</label>
+                    <div class="flex items-center space-x-2">
+                        <button type="button" onclick="changeQuantity(-1)" 
+                                class="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300">-</button>
                         
-                        </div>
-                        <p class="text-sm text-gray-500 mt-1">Max: {{ product[5] }} available</p>
+                        <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ product[5] }}" 
+                               class="w-20 px-3 py-2 border border-gray-300 text-center focus:outline-none focus:ring-2 focus:ring-primary font-semibold">
+                        
+                        <button type="button" onclick="changeQuantity(1)" 
+                                class="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300">+</button>
                     </div>
-                
+                    <p class="text-sm text-gray-500 mt-1">Max: {{ product[5] }} available</p>
+                </div>
+
                 <div class="flex space-x-4">
                     <!-- Add to Cart Form -->
                     <form action="{{ url_for('add_to_cart') }}" method="POST" class="inline">
                         <input type="hidden" name="product_id" value="{{ product[0] }}">
                         <input type="hidden" name="quantity" value="1" id="cartQuantity">
-                        <button type="button" onclick="updateCartQuantity()" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition duration-300">
+                        <button type="button" onclick="updateCartQuantity()" 
+                                class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition duration-300">
                             Add to Cart
                         </button>
                     </form>
@@ -51,29 +59,46 @@
                     <form action="{{ url_for('buy_now') }}" method="POST" class="inline">
                         <input type="hidden" name="product_id" value="{{ product[0] }}">
                         <input type="hidden" name="quantity" value="1" id="buyNowQuantity">
-                        <button type="button" onclick="updateBuyNowQuantity()" class="bg-secondary hover:bg-green-700 text-white font-bold py-2 px-6 rounded-md transition duration-300">
+                        <button type="button" onclick="updateBuyNowQuantity()" 
+                                class="bg-secondary hover:bg-green-700 text-white font-bold py-2 px-6 rounded-md transition duration-300">
                             Buy Now
                         </button>
                     </form>
                 </div>
                 {% endif %}
-                
-                <div class="border-t border-gray-200 pt-4">
-                    <p class="text-gray-600">Category: 
-                        {% for category in categories %}
-                            {% if category[0] == product[1] %}
-                                {{ category[1] }}
-                            {% endif %}
-                        {% endfor %}
-                    </p>
-                </div>
             </div>
+        </div>
+
+        <!-- Product Details Section -->
+        <div class="border-t border-gray-200 p-6">
+             <p class="text-gray-600">
+                <span class="font-semibold">Category:</span>
+                {% for category in categories %}
+                    {% if category[0] == product[1] %}
+                        {{ category[1] }}
+                    {% endif %}
+                {% endfor %}
+            </p>
+            <h2 class="text-xl font-semibold mb-4">Product Details</h2>
+            <p class="text-gray-700 mb-4">{{ product[3] }}</p>
+           
         </div>
     </div>
 </div>
 
-<!-- Simple JavaScript to update quantity before form submission -->
+<!-- JS for Quantity Control -->
 <script>
+function changeQuantity(step) {
+    const input = document.getElementById('quantity');
+    let current = parseInt(input.value) || 1;
+    let max = parseInt(input.max);
+    let min = parseInt(input.min);
+    let newValue = current + step;
+    if (newValue >= min && newValue <= max) {
+        input.value = newValue;
+    }
+}
+
 function updateCartQuantity() {
     const quantity = document.getElementById('quantity').value;
     document.getElementById('cartQuantity').value = quantity;

@@ -3,7 +3,7 @@
 {% block content %}
 
 <!-- Slider Section -->
-<div class="slider-container relative z-10">
+<div class="slider-container relative z-10 ">
   <div class="slider-wrapper" id="sliderWrapper">
     {% for item in slider_items %}
       <div class="slide relative w-full">
@@ -62,7 +62,7 @@ setInterval(nextSlide, 5000); // auto slide every 5s
             </div>
             <div class="p-4">
                 <h3 class="font-semibold text-lg mb-2">{{ product[2] }}</h3>
-                <p class="text-gray-600 mb-4 text-sm">{{ product[3][:100] }}{% if product[3]|length > 100 %}...{% endif %}</p>
+                <!-- <p class="text-gray-600 mb-4 text-sm">{{ product[3][:100] }}{% if product[3]|length > 100 %}...{% endif %}</p> -->
                 <p class="text-primary font-bold text-xl mb-4">{{ format_currency(product[4]) }}</p>
                 <div class="flex justify-between items-center">
                     <span class="text-primary hover:text-blue-700 font-semibold">View Details</span>
@@ -119,6 +119,7 @@ setInterval(nextSlide, 5000); // auto slide every 5s
 <!-- Features Section -->
 <section class="bg-[#e6dbac] py-12 relative z-1">
     <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold text-center mb-12 text-gray-800">What We Stand For</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div class="text-center">
                 <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
@@ -143,8 +144,22 @@ setInterval(nextSlide, 5000); // auto slide every 5s
             </div>
         </div>
     </div>
-</section>
+</section><br>
 
+<section class="bg-[#ecd59a] py-12 relative z-1">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-8 justify-items-center">
+      <div class="text-center max-w-2xl">
+        <h2 class="text-xl font-bold mb-4 text-red-800">Our Mission</h2>        
+        <p class="text-gray-700 leading-relaxed">
+          Our mission is to lovingly craft and share the authentic flavors of Nepal's
+          cherished traditional snacks, bringing the warmth of our culinary heritage and
+          simple joys to homes everywhere.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
 <!-- JavaScript for Reviews Scroll & Toggle Sound -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
