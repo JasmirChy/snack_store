@@ -57,7 +57,6 @@ CREATE TABLE orders (
 ALTER TABLE orders
 ADD COLUMN tracking_number VARCHAR(100) AFTER payment_proof;
 
-
 -- Order items table
 CREATE TABLE order_items (
     id INT AUTO_INCREMENT PRIMARY KEY,

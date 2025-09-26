@@ -43,9 +43,9 @@ MAIL_SERVER = 'smtp.gmail.com'
 MAIL_PORT = 587
 MAIL_USE_TLS = True
 MAIL_USE_SSL = False
-MAIL_USERNAME = 'your-email@gmail.com'
-MAIL_PASSWORD = 'your-email-password'
-MAIL_DEFAULT_SENDER = 'your-email@gmail.com'
+MAIL_USERNAME = 'jasmirchy@gmail.com'
+MAIL_PASSWORD = 'chfy qktf tnuz esgl'
+MAIL_DEFAULT_SENDER = 'info.swadgalli@gmail.com'
 
 # Pagination settings
 PRODUCTS_PER_PAGE = 12

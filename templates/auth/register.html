@@ -35,9 +35,16 @@
             </button>
         </form>
         
-        <div class="mt-6 text-center">
+        <!-- <div class="mt-6 text-center">
             <p class="text-gray-600">Already have an account? <a href="{{ url_for('login') }}" class="text-primary hover:underline">Login here</a></p>
-        </div>
+        </div> -->
     </div>
+     <div class="mt-6">
+            <a href="{{ url_for('login') }}" 
+               class="block text-center bg-blue-100 hover:bg-blue-200 text-blue-800 font-semibold py-3 px-4 rounded-md shadow-md transition duration-300">
+                Already have an account? Login here 
+            </a>
+        </div>
+
 </div>
 {% endblock %}

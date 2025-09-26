@@ -70,43 +70,50 @@
         </div>
     </div>
 
-
     <!-- Ordered Products -->
     <div class="bg-[#fffae1] rounded-lg shadow-md p-6 mb-6">
         <h2 class="text-2xl font-semibold mb-4">Products in this Order</h2>
         <div class="space-y-4">
             {% for item in items %}
-    <div class="flex border border-gray-200 rounded-md p-4 items-center">
-        <!-- Product Image -->
-        <div class="flex-shrink-0">
-            <img src="{{ url_for('static', filename='uploads/products/' + item[3]) if item[3] else 'https://via.placeholder.com/120' }}" 
-                alt="{{ item[0] }}" 
-                class="w-32 h-32 object-cover rounded-md">
+            <div class="flex border border-gray-200 rounded-md p-4 items-center">
+                <!-- Product Image -->
+                <div class="flex-shrink-0">
+                    <img src="{{ url_for('static', filename='uploads/products/' + item[3]) if item[3] else 'https://via.placeholder.com/120' }}" 
+                        alt="{{ item[0] }}" 
+                        class="w-32 h-32 object-cover rounded-md">
+                </div>
+
+                <!-- Product Details -->
+                <div class="ml-46 pl-4 flex-1 flex flex-col justify-center ">
+                    <h4 class="font-semibold">{{ item[0] }}</h4>  <!-- Product Name -->
+                    <p class="text-gray-700"><span class="font-semibold">Quantity:</span> {{ item[1] }}</p>
+                    <p class="text-gray-700"><span class="font-semibold">Unit Price:</span> Rs. {{ "%.2f"|format(item[2]) }}</p>
+                    <p class="font-semibold mt-1">Subtotal: Rs. {{ "%.2f"|format(item[1]*item[2]) }}</p>
+                </div>
+            </div>
+            {% endfor %}
         </div>
 
-        <!-- Product Details -->
-        <div class="ml-46 pl-4 flex-1 flex flex-col justify-center ">
-            <h4 class="font-semibold">{{ item[0] }}</h4>  <!-- Product Name -->
-            <p class="text-gray-700"><span class="font-semibold">Quantity:</span> {{ item[1] }}</p>
-            <p class="text-gray-700"><span class="font-semibold">Unit Price:</span> Rs. {{ "%.2f"|format(item[2]) }}</p>
-            <p class="font-semibold mt-1">Subtotal: Rs. {{ "%.2f"|format(item[1]*item[2]) }}</p>
+        <!-- Total Amount -->
+        <div class="text-right mt-6 mr-10">
+            <p class="text-lg font-semibold">Total: Rs. {{ "%.2f"|format(order[1]|float) }}</p>
         </div>
     </div>
-    {% endfor %}
 
-    </div>
-
-    <!-- Total Amount -->
-    <div class="text-right mt-6 mr-10">
-        <p class="text-lg font-semibold">Total: Rs. {{ "%.2f"|format(order[1]|float) }}</p>
-    </div>
-</div>
-
-
-    <div class="text-center">
+    <!-- Action Buttons -->
+    <div class="text-center space-x-4">
         <a href="{{ url_for('user_orders') }}" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300">
             Back to Orders
         </a>
+
+        {% if order[4] not in ['shipped', 'delivered', 'cancelled'] %}
+        <form method="POST" action="{{ url_for('cancel_order', order_id=order[0]) }}" class="inline-block">
+            <button type="submit" onclick="return confirm('Are you sure you want to cancel this order?')" 
+                class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md transition duration-300">
+                Cancel Order
+            </button>
+        </form>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

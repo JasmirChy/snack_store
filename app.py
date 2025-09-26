@@ -13,7 +13,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
-
+mail=Mail(app)
 # Initialize MySQL
 mysql = MySQL(app)
 
@@ -41,6 +41,39 @@ def send_admin_notification():
             server.send_message(msg)
     except Exception as e:
         print("Failed to send notification:", e)
+
+
+def send_customer_order_placed_email(to_email, customer_name, order_id, product_names):
+    sender_email = "info.swadgalli@gmail.com"
+    sender_password = "chfy qktf tnuz esgl"  # Gmail app password
+
+    subject = f"Your Order #{order_id} has been placed successfully!"
+    products_list = ", ".join(product_names)
+
+    body = f"""
+    Hello {customer_name},
+
+    Your order (Order ID: {order_id}) has been placed successfully.
+
+    Products in your order: {products_list}
+
+    Thank you for shopping with SwadGaLLi!
+    """
+
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, to_email, msg.as_string())
+            print(f"Order placed email sent to {to_email}")
+    except Exception as e:
+        print(f"Failed to send order placed email: {e}")
 
 def send_customer_order_status_email(to_email, customer_name, order_id, status, tracking_number=None):
     sender_email = "info.swadgalli@gmail.com"
@@ -554,6 +587,92 @@ def update_cart():
     
     return redirect(url_for('cart'))
 
+# @app.route('/checkout', methods=['GET', 'POST'])
+# @login_required
+# def checkout():
+#     if current_user.is_admin:
+#         flash('Admin users cannot checkout orders', 'error')
+#         return redirect(url_for('admin_dashboard'))
+    
+#     if request.method == 'POST':
+#         name = request.form.get('name')
+#         phone = request.form.get('phone')
+#         country = request.form.get('country')
+#         city = request.form.get('city')
+#         postal_code = request.form.get('postal_code')
+#         street = request.form.get('street')
+#         payment_method = request.form.get('payment_method')
+        
+#         address = f"{name}\n{street}\n{city}, {postal_code}\n{country}\nPhone: {phone}"
+        
+#         cur = mysql.connection.cursor()
+#         cur.execute("""
+#             SELECT p.id, p.price, ci.quantity, (p.price * ci.quantity) as total
+#             FROM cart_items ci
+#             JOIN products p ON ci.product_id = p.id
+#             WHERE ci.user_id = %s
+#         """, (current_user.id,))
+        
+#         cart_items = cur.fetchall()
+        
+#         if not cart_items:
+#             flash('Your cart is empty', 'error')
+#             return redirect(url_for('cart'))
+        
+#         total_amount = sum(item[3] for item in cart_items)
+        
+#         for item in cart_items:
+#             cur.execute("SELECT stock FROM products WHERE id = %s", (item[0],))
+#             stock = cur.fetchone()[0]
+#             if stock < item[2]:
+#                 flash(f'Not enough stock for product ID {item[0]}', 'error')
+#                 return redirect(url_for('cart'))
+        
+#         cur.execute("""
+#             INSERT INTO orders (user_id, total_amount, address, payment_method, status)
+#             VALUES (%s, %s, %s, %s, 'pending')
+#         """, (current_user.id, total_amount, address, payment_method))
+        
+#         order_id = cur.lastrowid
+#         mysql.connection.commit()
+#         send_admin_notification()
+    
+#         for item in cart_items:
+#             cur.execute("""
+#                 INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+#                 VALUES (%s, %s, %s, %s)
+#             """, (order_id, item[0], item[2], item[1]))
+            
+#             cur.execute("UPDATE products SET stock = stock - %s WHERE id = %s", (item[2], item[0]))
+        
+#         cur.execute("DELETE FROM cart_items WHERE user_id = %s", (current_user.id,))
+        
+#         mysql.connection.commit()
+#         cur.close()
+        
+#         flash('Order placed successfully!', 'success')
+#         return redirect(url_for('order_confirmation', order_id=order_id))
+    
+#     cur = mysql.connection.cursor()
+#     cur.execute("""
+#         SELECT ci.id, p.id, p.title, p.price, p.image, ci.quantity, (p.price * ci.quantity) as total
+#         FROM cart_items ci
+#         JOIN products p ON ci.product_id = p.id
+#         WHERE ci.user_id = %s
+#     """, (current_user.id,))
+    
+#     cart_items = cur.fetchall()
+#     grand_total = sum(item[6] for item in cart_items)
+    
+#     if not cart_items:
+#         flash('Your cart is empty', 'error')
+#         return redirect(url_for('cart'))
+    
+#     cur.close()
+    
+#     return render_template('cart/checkout.html', cart_items=cart_items, grand_total=grand_total)
+
+
 @app.route('/checkout', methods=['GET', 'POST'])
 @login_required
 def checkout():
@@ -588,6 +707,7 @@ def checkout():
         
         total_amount = sum(item[3] for item in cart_items)
         
+        # Check stock availability
         for item in cart_items:
             cur.execute("SELECT stock FROM products WHERE id = %s", (item[0],))
             stock = cur.fetchone()[0]
@@ -595,6 +715,7 @@ def checkout():
                 flash(f'Not enough stock for product ID {item[0]}', 'error')
                 return redirect(url_for('cart'))
         
+        # Insert the order
         cur.execute("""
             INSERT INTO orders (user_id, total_amount, address, payment_method, status)
             VALUES (%s, %s, %s, %s, 'pending')
@@ -602,8 +723,11 @@ def checkout():
         
         order_id = cur.lastrowid
         mysql.connection.commit()
+        
+        # Notify admin
         send_admin_notification()
-    
+        
+        # Insert order items and update stock
         for item in cart_items:
             cur.execute("""
                 INSERT INTO order_items (order_id, product_id, quantity, unit_price)
@@ -612,14 +736,31 @@ def checkout():
             
             cur.execute("UPDATE products SET stock = stock - %s WHERE id = %s", (item[2], item[0]))
         
-        cur.execute("DELETE FROM cart_items WHERE user_id = %s", (current_user.id,))
+        # ✅ Fetch product names for email
+        product_ids = [item[0] for item in cart_items]
+        cur.execute(
+            "SELECT title FROM products WHERE id IN (%s)" % ",".join(["%s"]*len(product_ids)),
+            product_ids
+        )
+        product_names = [row[0] for row in cur.fetchall()]
         
+        # ✅ Send order placed email to customer
+        send_customer_order_placed_email(
+            to_email=current_user.email,
+            customer_name=current_user.name,
+            order_id=order_id,
+            product_names=product_names
+        )
+        
+        # Delete cart items after order is placed
+        cur.execute("DELETE FROM cart_items WHERE user_id = %s", (current_user.id,))
         mysql.connection.commit()
         cur.close()
         
         flash('Order placed successfully!', 'success')
         return redirect(url_for('order_confirmation', order_id=order_id))
     
+    # GET method: display checkout page
     cur = mysql.connection.cursor()
     cur.execute("""
         SELECT ci.id, p.id, p.title, p.price, p.image, ci.quantity, (p.price * ci.quantity) as total
@@ -638,6 +779,7 @@ def checkout():
     cur.close()
     
     return render_template('cart/checkout.html', cart_items=cart_items, grand_total=grand_total)
+
 
 @app.route('/order_confirmation/<int:order_id>')
 @login_required
@@ -1218,7 +1360,89 @@ def admin_update_order_status(order_id):
     flash('Order status updated successfully', 'success')
     return redirect(url_for('admin_orders'))
 
+def send_admin_order_cancel_email(order_id, customer_name, customer_email):
+    sender_email = "info.swadgalli@gmail.com"
+    sender_password = "chfy qktf tnuz esgl"  # Gmail app password
+    admin_email = "jasmirchy@gmail.com"
 
+    subject = f"Order #{order_id} Cancelled by Customer"
+    body = f"Order #{order_id} has been cancelled by the customer.\nCustomer Name: {customer_name}\nCustomer Email: {customer_email}"
+
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = admin_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, admin_email, msg.as_string())
+    except Exception as e:
+        print(f"Failed to send admin email: {e}")
+
+def send_customer_order_cancel_email(to_email, customer_name, order_id):
+    sender_email = "info.swadgalli@gmail.com"
+    sender_password = "chfy qktf tnuz esgl"
+
+    subject = f"Your Order #{order_id} has been Cancelled"
+    body = f"Hello {customer_name},\n\nYour order (Order ID: {order_id}) has been successfully cancelled by you.\n\nThank you for shopping with SwadGaLLi!"
+
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, to_email, msg.as_string())
+    except Exception as e:
+        print(f"Failed to send customer email: {e}")
+
+@app.route('/cancel_order/<int:order_id>', methods=['POST'])
+@login_required
+def cancel_order(order_id):
+    cur = mysql.connection.cursor()
+    
+    # Get order details
+    cur.execute("SELECT status, user_id FROM orders WHERE id = %s", (order_id,))
+    order = cur.fetchone()
+    if not order:
+        flash('Order not found', 'error')
+        return redirect(url_for('user_orders'))
+
+    status, user_id = order
+
+    # Check if order can be cancelled
+    if status in ['shipped', 'delivered', 'cancelled']:
+        flash('This order cannot be cancelled', 'error')
+        cur.close()
+        return redirect(url_for('user_orders'))
+
+    # Update order status
+    cur.execute("UPDATE orders SET status = 'cancelled' WHERE id = %s", (order_id,))
+    mysql.connection.commit()
+
+    # Get user info for email
+    cur.execute("SELECT email, name FROM users WHERE id = %s", (user_id,))
+    user = cur.fetchone()
+    cur.close()
+
+    if user:
+        user_email, user_name = user
+
+        # 1️⃣ Send email to admin
+        send_admin_order_cancel_email(order_id, user_name, user_email)
+
+        # 2️⃣ Send email to customer
+        send_customer_order_cancel_email(user_email, user_name, order_id)
+
+    flash('Order cancelled successfully', 'success')
+    return redirect(url_for('user_orders'))
 
 
 @app.route('/admin/orders/<int:order_id>')
