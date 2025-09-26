@@ -372,28 +372,6 @@ def index():
         reviews=reviews   # 👈 pass reviews to template
     )
 
-
-# @app.route('/')
-# def index():
-#     cur = mysql.connection.cursor()
-    
-#     # Get all active banners for the slider
-#     cur.execute("SELECT * FROM banners WHERE active = TRUE ORDER BY created_at DESC")
-#     banners = cur.fetchall()
-
-#     cur.execute("SELECT * FROM slider_items ORDER BY created_at DESC")
-#     slider_items = cur.fetchall()
-    
-#     # Get products
-#     cur.execute("SELECT * FROM products WHERE stock > 0 ORDER BY created_at DESC LIMIT 8")
-#     products = cur.fetchall()
-    
-#     cur.close()
-    
-#     return render_template('index.html',slider_items=slider_items, banners=banners, products=products)
-# =========================
-# Review Management Routes
-# =========================
 # View all reviews
 @app.route('/admin/reviews')
 @login_required
@@ -489,6 +467,7 @@ def products():
     
     return render_template('products/list.html', products=products)
 
+
 @app.route('/product/<int:product_id>')
 def product_detail(product_id):
     if current_user.is_authenticated and current_user.is_admin:
@@ -497,13 +476,46 @@ def product_detail(product_id):
     cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM products WHERE id = %s", (product_id,))
     product = cur.fetchone()
-    cur.close()
     
     if not product:
         flash('Product not found', 'error')
         return redirect(url_for('products'))
     
-    return render_template('products/detail.html', product=product)
+    # Get all images for this product
+    cur.execute("SELECT * FROM product_images WHERE product_id = %s ORDER BY is_primary DESC, created_at ASC", (product_id,))
+    product_images = cur.fetchall()
+    
+    cur.close()
+    
+    return render_template('products/detail.html', product=product, product_images=product_images)
+
+
+
+# Add a helper function to get primary image
+def get_primary_image(product_id):
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT filename FROM product_images WHERE product_id = %s AND is_primary = TRUE LIMIT 1", (product_id,))
+    result = cur.fetchone()
+    cur.close()
+    
+    if result:
+        return result[0]
+    return None
+
+# Update the inject_global_data function if needed for product listings
+@app.context_processor
+def inject_global_data():
+    cart_count = 0
+    if current_user.is_authenticated and not current_user.is_admin:
+        cart_count = get_cart_count()
+    
+    return dict(
+        categories=get_categories(),
+        cart_count=cart_count,
+        format_currency=format_currency,
+        format_date=format_date_filter,
+        get_primary_image=get_primary_image  
+    )
 
 @app.route('/add_to_cart', methods=['POST'])
 @login_required
@@ -587,90 +599,91 @@ def update_cart():
     
     return redirect(url_for('cart'))
 
-# @app.route('/checkout', methods=['GET', 'POST'])
-# @login_required
-# def checkout():
-#     if current_user.is_admin:
-#         flash('Admin users cannot checkout orders', 'error')
-#         return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/products/delete_image/<int:image_id>', methods=['POST'])
+@login_required
+def admin_delete_product_image(image_id):
+    if not current_user.is_admin:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
     
-#     if request.method == 'POST':
-#         name = request.form.get('name')
-#         phone = request.form.get('phone')
-#         country = request.form.get('country')
-#         city = request.form.get('city')
-#         postal_code = request.form.get('postal_code')
-#         street = request.form.get('street')
-#         payment_method = request.form.get('payment_method')
-        
-#         address = f"{name}\n{street}\n{city}, {postal_code}\n{country}\nPhone: {phone}"
-        
-#         cur = mysql.connection.cursor()
-#         cur.execute("""
-#             SELECT p.id, p.price, ci.quantity, (p.price * ci.quantity) as total
-#             FROM cart_items ci
-#             JOIN products p ON ci.product_id = p.id
-#             WHERE ci.user_id = %s
-#         """, (current_user.id,))
-        
-#         cart_items = cur.fetchall()
-        
-#         if not cart_items:
-#             flash('Your cart is empty', 'error')
-#             return redirect(url_for('cart'))
-        
-#         total_amount = sum(item[3] for item in cart_items)
-        
-#         for item in cart_items:
-#             cur.execute("SELECT stock FROM products WHERE id = %s", (item[0],))
-#             stock = cur.fetchone()[0]
-#             if stock < item[2]:
-#                 flash(f'Not enough stock for product ID {item[0]}', 'error')
-#                 return redirect(url_for('cart'))
-        
-#         cur.execute("""
-#             INSERT INTO orders (user_id, total_amount, address, payment_method, status)
-#             VALUES (%s, %s, %s, %s, 'pending')
-#         """, (current_user.id, total_amount, address, payment_method))
-        
-#         order_id = cur.lastrowid
-#         mysql.connection.commit()
-#         send_admin_notification()
+    cur = mysql.connection.cursor()
     
-#         for item in cart_items:
-#             cur.execute("""
-#                 INSERT INTO order_items (order_id, product_id, quantity, unit_price)
-#                 VALUES (%s, %s, %s, %s)
-#             """, (order_id, item[0], item[2], item[1]))
-            
-#             cur.execute("UPDATE products SET stock = stock - %s WHERE id = %s", (item[2], item[0]))
+    # Get image info before deleting
+    cur.execute("SELECT product_id, filename FROM product_images WHERE id = %s", (image_id,))
+    image_info = cur.fetchone()
+    
+    if image_info:
+        product_id, filename = image_info
         
-#         cur.execute("DELETE FROM cart_items WHERE user_id = %s", (current_user.id,))
+        # Delete from database
+        cur.execute("DELETE FROM product_images WHERE id = %s", (image_id,))
+        mysql.connection.commit()
         
-#         mysql.connection.commit()
-#         cur.close()
+        # Delete physical file
+        try:
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'products', filename)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            print(f"Error deleting image file: {e}")
+    
+    cur.close()
+    flash('Image deleted successfully', 'success')
+    return redirect(url_for('admin_edit_product', product_id=product_id))
+
+@app.route('/admin/products/set_primary_image/<int:image_id>', methods=['POST'])
+@login_required
+def admin_set_primary_image(image_id):
+    if not current_user.is_admin:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    cur = mysql.connection.cursor()
+    
+    # Get product_id first
+    cur.execute("SELECT product_id FROM product_images WHERE id = %s", (image_id,))
+    result = cur.fetchone()
+    
+    if result:
+        product_id = result[0]
         
-#         flash('Order placed successfully!', 'success')
-#         return redirect(url_for('order_confirmation', order_id=order_id))
+        # Reset all primary flags for this product
+        cur.execute("UPDATE product_images SET is_primary = FALSE WHERE product_id = %s", (product_id,))
+        
+        # Set the selected image as primary
+        cur.execute("UPDATE product_images SET is_primary = TRUE WHERE id = %s", (image_id,))
+        mysql.connection.commit()
     
-#     cur = mysql.connection.cursor()
-#     cur.execute("""
-#         SELECT ci.id, p.id, p.title, p.price, p.image, ci.quantity, (p.price * ci.quantity) as total
-#         FROM cart_items ci
-#         JOIN products p ON ci.product_id = p.id
-#         WHERE ci.user_id = %s
-#     """, (current_user.id,))
+    cur.close()
+    flash('Primary image updated successfully', 'success')
+    return redirect(url_for('admin_edit_product', product_id=product_id))
+
+
+# Add this function to your app.py to count images for each product
+def get_image_count(product_id):
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT COUNT(*) FROM product_images WHERE product_id = %s", (product_id,))
+    count = cur.fetchone()[0] or 0
+    cur.close()
+    return count
+
+# Also add this to your context processor if you want to use it in templates
+@app.context_processor
+def inject_global_data():
+    cart_count = 0
+    if current_user.is_authenticated and not current_user.is_admin:
+        cart_count = get_cart_count()
     
-#     cart_items = cur.fetchall()
-#     grand_total = sum(item[6] for item in cart_items)
-    
-#     if not cart_items:
-#         flash('Your cart is empty', 'error')
-#         return redirect(url_for('cart'))
-    
-#     cur.close()
-    
-#     return render_template('cart/checkout.html', cart_items=cart_items, grand_total=grand_total)
+    return dict(
+        categories=get_categories(),
+        cart_count=cart_count,
+        format_currency=format_currency,
+        format_date=format_date_filter,
+        get_primary_image=get_primary_image,
+        get_image_count=get_image_count  # Add this line
+    )
+
 
 
 @app.route('/checkout', methods=['GET', 'POST'])
@@ -1155,6 +1168,99 @@ def admin_products():
     
     return render_template('admin/products.html', products=products)
 
+# @app.route('/admin/products/add', methods=['GET', 'POST'])
+# @login_required
+# def admin_add_product():
+#     if not current_user.is_admin:
+#         flash('Access denied', 'error')
+#         return redirect(url_for('index'))
+    
+#     if request.method == 'POST':
+#         title = request.form.get('title')
+#         description = request.form.get('description')
+#         price = float(request.form.get('price'))
+#         stock = int(request.form.get('stock'))
+#         category_id = request.form.get('category_id')
+        
+#         image_filename = None
+#         if 'image' in request.files:
+#             file = request.files['image']
+#             if file and file.filename != '' and allowed_file(file.filename):
+#                 filename = secure_filename(f"{uuid.uuid4().hex}_{file.filename}")
+#                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'products', filename)
+#                 os.makedirs(os.path.dirname(filepath), exist_ok=True)
+#                 file.save(filepath)
+#                 image_filename = filename
+        
+#         cur = mysql.connection.cursor()
+#         cur.execute("""
+#             INSERT INTO products (title, description, price, stock, category_id, image)
+#             VALUES (%s, %s, %s, %s, %s, %s)
+#         """, (title, description, price, stock, category_id, image_filename))
+        
+#         mysql.connection.commit()
+#         cur.close()
+        
+#         flash('Product added successfully', 'success')
+#         return redirect(url_for('admin_products'))
+    
+#     categories = get_categories()
+#     return render_template('admin/product_form.html', categories=categories)
+
+# @app.route('/admin/products/edit/<int:product_id>', methods=['GET', 'POST'])
+# @login_required
+# def admin_edit_product(product_id):
+#     if not current_user.is_admin:
+#         flash('Access denied', 'error')
+#         return redirect(url_for('index'))
+    
+#     cur = mysql.connection.cursor()
+    
+#     if request.method == 'POST':
+#         title = request.form.get('title')
+#         description = request.form.get('description')
+#         price = float(request.form.get('price'))
+#         stock = int(request.form.get('stock'))
+#         category_id = request.form.get('category_id')
+        
+#         image_filename = None
+#         if 'image' in request.files:
+#             file = request.files['image']
+#             if file and file.filename != '' and allowed_file(file.filename):
+#                 filename = secure_filename(f"{uuid.uuid4().hex}_{file.filename}")
+#                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'products', filename)
+#                 os.makedirs(os.path.dirname(filepath), exist_ok=True)
+#                 file.save(filepath)
+#                 image_filename = filename
+        
+#         if image_filename:
+#             cur.execute("""
+#                 UPDATE products 
+#                 SET title = %s, description = %s, price = %s, stock = %s, category_id = %s, image = %s
+#                 WHERE id = %s
+#             """, (title, description, price, stock, category_id, image_filename, product_id))
+#         else:
+#             cur.execute("""
+#                 UPDATE products 
+#                 SET title = %s, description = %s, price = %s, stock = %s, category_id = %s
+#                 WHERE id = %s
+#             """, (title, description, price, stock, category_id, product_id))
+        
+#         mysql.connection.commit()
+#         cur.close()
+        
+#         flash('Product updated successfully', 'success')
+#         return redirect(url_for('admin_products'))
+    
+#     cur.execute("SELECT * FROM products WHERE id = %s", (product_id,))
+#     product = cur.fetchone()
+    
+#     categories = get_categories()
+#     cur.close()
+    
+#     return render_template('admin/product_form.html', product=product, categories=categories)
+
+# Update the admin_add_product function
 @app.route('/admin/products/add', methods=['GET', 'POST'])
 @login_required
 def admin_add_product():
@@ -1169,21 +1275,35 @@ def admin_add_product():
         stock = int(request.form.get('stock'))
         category_id = request.form.get('category_id')
         
-        image_filename = None
-        if 'image' in request.files:
-            file = request.files['image']
-            if file and file.filename != '' and allowed_file(file.filename):
-                filename = secure_filename(f"{uuid.uuid4().hex}_{file.filename}")
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'products', filename)
-                os.makedirs(os.path.dirname(filepath), exist_ok=True)
-                file.save(filepath)
-                image_filename = filename
-        
         cur = mysql.connection.cursor()
         cur.execute("""
-            INSERT INTO products (title, description, price, stock, category_id, image)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, (title, description, price, stock, category_id, image_filename))
+            INSERT INTO products (title, description, price, stock, category_id)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (title, description, price, stock, category_id))
+        
+        product_id = cur.lastrowid
+        
+        # Handle multiple image uploads
+        if 'images' in request.files:
+            files = request.files.getlist('images')
+            primary_set = False
+            
+            for i, file in enumerate(files):
+                if file and file.filename != '' and allowed_file(file.filename):
+                    filename = secure_filename(f"{uuid.uuid4().hex}_{file.filename}")
+                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'products', filename)
+                    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+                    file.save(filepath)
+                    
+                    # First image becomes primary by default
+                    is_primary = not primary_set
+                    if is_primary:
+                        primary_set = True
+                    
+                    cur.execute("""
+                        INSERT INTO product_images (product_id, filename, is_primary)
+                        VALUES (%s, %s, %s)
+                    """, (product_id, filename, is_primary))
         
         mysql.connection.commit()
         cur.close()
@@ -1194,6 +1314,7 @@ def admin_add_product():
     categories = get_categories()
     return render_template('admin/product_form.html', categories=categories)
 
+# Update the admin_edit_product function
 @app.route('/admin/products/edit/<int:product_id>', methods=['GET', 'POST'])
 @login_required
 def admin_edit_product(product_id):
@@ -1210,28 +1331,27 @@ def admin_edit_product(product_id):
         stock = int(request.form.get('stock'))
         category_id = request.form.get('category_id')
         
-        image_filename = None
-        if 'image' in request.files:
-            file = request.files['image']
-            if file and file.filename != '' and allowed_file(file.filename):
-                filename = secure_filename(f"{uuid.uuid4().hex}_{file.filename}")
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'products', filename)
-                os.makedirs(os.path.dirname(filepath), exist_ok=True)
-                file.save(filepath)
-                image_filename = filename
+        cur.execute("""
+            UPDATE products 
+            SET title = %s, description = %s, price = %s, stock = %s, category_id = %s
+            WHERE id = %s
+        """, (title, description, price, stock, category_id, product_id))
         
-        if image_filename:
-            cur.execute("""
-                UPDATE products 
-                SET title = %s, description = %s, price = %s, stock = %s, category_id = %s, image = %s
-                WHERE id = %s
-            """, (title, description, price, stock, category_id, image_filename, product_id))
-        else:
-            cur.execute("""
-                UPDATE products 
-                SET title = %s, description = %s, price = %s, stock = %s, category_id = %s
-                WHERE id = %s
-            """, (title, description, price, stock, category_id, product_id))
+        # Handle additional image uploads
+        if 'images' in request.files:
+            files = request.files.getlist('images')
+            
+            for file in files:
+                if file and file.filename != '' and allowed_file(file.filename):
+                    filename = secure_filename(f"{uuid.uuid4().hex}_{file.filename}")
+                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'products', filename)
+                    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+                    file.save(filepath)
+                    
+                    cur.execute("""
+                        INSERT INTO product_images (product_id, filename, is_primary)
+                        VALUES (%s, %s, FALSE)
+                    """, (product_id, filename))
         
         mysql.connection.commit()
         cur.close()
@@ -1242,10 +1362,17 @@ def admin_edit_product(product_id):
     cur.execute("SELECT * FROM products WHERE id = %s", (product_id,))
     product = cur.fetchone()
     
+    # Get all images for this product
+    cur.execute("SELECT * FROM product_images WHERE product_id = %s ORDER BY is_primary DESC, created_at ASC", (product_id,))
+    product_images = cur.fetchall()
+    
     categories = get_categories()
     cur.close()
     
-    return render_template('admin/product_form.html', product=product, categories=categories)
+    return render_template('admin/product_form.html', product=product, categories=categories, product_images=product_images)
+
+
+
 
 @app.route('/admin/products/delete/<int:product_id>')
 @login_required

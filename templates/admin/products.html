@@ -9,14 +9,15 @@
         </a>
     </div>
     
-    <div class="bg-white rounded-lg shadow-md overflow-hidden">
-        <table class="w-full">
+    <div class="bg-white rounded-lg shadow-md overflow-x-auto">
+        <table class="w-full ">
             <thead>
                 <tr class="bg-gray-100">
                     <th class="px-4 py-3 text-left">Product</th>
                     <th class="px-4 py-3 text-left">Category</th>
                     <th class="px-4 py-3 text-left">Price</th>
                     <th class="px-4 py-3 text-left">Stock</th>
+                    <th class="px-4 py-3 text-left">Images</th>
                     <th class="px-4 py-3 text-left">Actions</th>
                 </tr>
             </thead>
@@ -25,7 +26,10 @@
                 <tr class="border-b border-gray-200">
                     <td class="px-4 py-3">
                         <div class="flex items-center">
-                            <img src="{{ url_for('static', filename='uploads/products/' + product[6]) if product[6] else 'https://via.placeholder.com/60' }}" alt="{{ product[2] }}" class="w-10 h-10 object-cover rounded-md mr-3">
+                            {% set primary_image = get_primary_image(product[0]) %}
+                            <img src="{{ url_for('static', filename='uploads/products/' + primary_image) if primary_image else 'https://via.placeholder.com/60' }}" 
+                                 alt="{{ product[2] }}" 
+                                 class="w-10 h-10 object-cover rounded-md mr-3">
                             <div>
                                 <h3 class="font-semibold">{{ product[2] }}</h3>
                             </div>
@@ -40,6 +44,10 @@
                     </td>
                     <td class="px-4 py-3">${{ "%.2f"|format(product[4]) }}</td>
                     <td class="px-4 py-3">{{ product[5] }}</td>
+                    <td class="px-4 py-3">
+                        {% set image_count = get_image_count(product[0]) %}
+                        <span class="bg-gray-200 px-2 py-1 rounded-full text-xs">{{ image_count }} image(s)</span>
+                    </td>
                     <td class="px-4 py-3">
                         <div class="flex space-x-2">
                             <a href="{{ url_for('admin_edit_product', product_id=product[0]) }}" class="text-blue-600 hover:text-blue-800">

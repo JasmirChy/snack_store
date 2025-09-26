@@ -27,7 +27,9 @@
         <div class="bg-[#fffae1] rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 cursor-pointer" 
              onclick="window.location='{{ url_for('product_detail', product_id=product[0]) }}'">
             <div class="relative">
-                <img src="{{ url_for('static', filename='uploads/products/' + product[6]) if product[6] else 'https://via.placeholder.com/300' }}" 
+                <!-- Fixed image source using get_primary_image function -->
+                {% set primary_image = get_primary_image(product[0]) %}
+                <img src="{{ url_for('static', filename='uploads/products/' + primary_image) if primary_image else url_for('static', filename='images/default-product.jpg') }}" 
                      alt="{{ product[2] }}" 
                      class="w-full h-48 object-cover">
                 {% if product[5] == 0 %}

@@ -56,6 +56,12 @@ CREATE TABLE orders (
 );
 ALTER TABLE orders
 ADD COLUMN tracking_number VARCHAR(100) AFTER payment_proof;
+ALTER TABLE orders 
+ADD COLUMN payment_status ENUM('pending', 'paid', 'failed') DEFAULT 'pending',
+ADD COLUMN khalti_token VARCHAR(255),
+ADD COLUMN khalti_transaction_id VARCHAR(255),
+ADD COLUMN paid_at TIMESTAMP NULL;
+
 
 -- Order items table
 CREATE TABLE order_items (
@@ -128,11 +134,15 @@ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 CREATE TABLE product_images (
     id INT AUTO_INCREMENT PRIMARY KEY,
     product_id INT NOT NULL,
-    image_path VARCHAR(255) NOT NULL,
+    filename VARCHAR(255) NOT NULL,
+    is_primary BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
+-- Add index for better performance
+CREATE INDEX idx_product_images_product_id ON product_images(product_id);
+CREATE INDEX idx_product_images_primary ON product_images(is_primary);
 
 -- Insert sample data
 INSERT INTO categories (name) VALUES 

@@ -55,8 +55,10 @@ setInterval(nextSlide, 5000); // auto slide every 5s
         <div class="product-item bg-[#fffae1] rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 cursor-pointer clickable-product"
              onclick="window.location='{{ url_for('product_detail', product_id=product[0]) }}'">
             <div class="relative">
-                <img src="{{ url_for('static', filename='uploads/products/' + product[6]) if product[6] else 'https://via.placeholder.com/300' }}" alt="{{ product[2] }}" class="w-full h-48 object-cover">
-                {% if product[5] == 0 %}
+{% set primary_image = get_primary_image(product[0]) %}
+                <img src="{{ url_for('static', filename='uploads/products/' + primary_image) if primary_image else url_for('static', filename='images/default-product.jpg') }}" 
+                     alt="{{ product[2] }}" 
+                     class="w-full h-48 object-cover">                {% if product[5] == 0 %}
                 <span class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs">Out of Stock</span>
                 {% endif %}
             </div>
