@@ -12,9 +12,9 @@
             {% for item in cart_items %}
             <div class="flex justify-between items-center mb-4 pb-4 border-b border-gray-200">
                 <div class="flex items-center">
-{% set primary_image = get_primary_image(item[1]) %}
-<img src="{{ url_for('static', filename='uploads/products/' + primary_image) if primary_image else url_for('static', filename='images/default-product.jpg') }}" 
-     alt="{{ item[2] }}" class="w-16 h-16 object-cover rounded-md mr-4">
+                    {% set primary_image = get_primary_image(item[1]) %}
+                    <img src="{{ url_for('static', filename='uploads/products/' + primary_image) if primary_image else url_for('static', filename='images/default-product.jpg') }}" 
+                         alt="{{ item[2] }}" class="w-16 h-16 object-cover rounded-md mr-4">
                     <div>
                         <h3 class="font-semibold">{{ item[2] }}</h3>
                         <p class="text-gray-600">Qty: {{ item[5] }}</p>
@@ -36,7 +36,7 @@
         <div class="bg-[#fffae1] rounded-lg shadow-md p-6">
             <h2 class="text-xl font-semibold mb-4">Shipping Information</h2>
             
-            <form method="POST" action="{{ url_for('checkout') }}">
+            <form method="POST" action="{{ url_for('checkout') }}" enctype="multipart/form-data" onsubmit="return checkPaymentProof()">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label for="name" class="block text-gray-700 mb-2">Full Name *</label>
@@ -85,27 +85,92 @@
                     </div>
                 </div>
                 
+                <!-- Payment Method -->
                 <div class="mb-6">
                     <h3 class="text-lg font-semibold mb-3">Payment Method *</h3>
                     
                     <div class="space-y-2">
                         <div class="flex items-center">
-                            <input type="radio" id="cod" name="payment_method" value="cod" class="mr-2" checked>
+                            <input type="radio" id="cod" name="payment_method" value="cod" class="mr-2" checked onchange="togglePaymentSection()">
                             <label for="cod" class="text-gray-700">Cash on Delivery</label>
                         </div>
                         
                         <div class="flex items-center">
-                            <input type="radio" id="online" name="payment_method" value="online" class="mr-2">
+                            <input type="radio" id="online" name="payment_method" value="online" class="mr-2" onchange="togglePaymentSection()">
                             <label for="online" class="text-gray-700">Online Payment</label>
                         </div>
                     </div>
                 </div>
-                
+
+                <!-- Online Payment Section -->
+                <div class="mt-4" id="onlinePaymentSection" style="display: none;">
+                    <h3 class="font-semibold mb-2">Online Payment QR</h3>
+                    <p><b>Please use qr code given below to make online payment and upload the screenshot of payment proof below</b></p>
+                    <p>(कृपया अनलाइन भुक्तानी गर्न तल दिइएको क्यूआर कोड प्रयोग गर्नुहोस् र भुक्तानी प्रमाणको स्क्रीनसट तल अपलोड गर्नुहोस्।)</p>
+                    {% if qr_setting and qr_setting[2] %}
+                        <img id="paymentQr" src="{{ url_for('static', filename='uploads/payment_qr/' + qr_setting[2]) }}" 
+                             alt="Payment QR Code" class="w-48 h-48 mb-2 border rounded-lg">
+                        <a id="downloadQr" href="{{ url_for('static', filename='uploads/payment_qr/' + qr_setting[2]) }}" download
+                           class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md mb-2 inline-block">
+                           Download QR
+                        </a>
+                    {% else %}
+                        <p class="text-red-500">No QR code uploaded yet. Contact admin.</p>
+                    {% endif %}
+                    
+                    <label class="block text-gray-700 mb-2">Upload Payment Proof *</label>
+                    <input type="file" id="paymentProof" name="payment_proof"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary mb-2">
+                </div>
+
                 <button type="submit" class="w-full bg-primary hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md transition duration-300">
                     Place Order
                 </button>
             </form>
         </div>
     </div>
+
+    <!-- Payment Proof Modal -->
+    <div id="proofModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-[#fffae1] rounded-lg p-6 w-96 text-center">
+            <h2 class="text-xl font-bold mb-4">Payment Proof Missing</h2>
+            <p class="mb-4">Please upload payment proof before placing the order.</p>
+            <button onclick="closeModal()" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">OK</button>
+        </div>
+    </div>
 </div>
+
+<script>
+const codRadio = document.getElementById('cod');
+const onlineRadio = document.getElementById('online');
+const onlineSection = document.getElementById('onlinePaymentSection');
+const paymentProofInput = document.getElementById('paymentProof');
+const proofModal = document.getElementById('proofModal');
+
+// Toggle online payment section
+function togglePaymentSection() {
+    if (onlineRadio.checked) {
+        onlineSection.style.display = 'block';
+    } else {
+        onlineSection.style.display = 'none';
+    }
+}
+
+// Modal functions
+function checkPaymentProof() {
+    if (onlineRadio.checked && (!paymentProofInput || paymentProofInput.files.length === 0)) {
+        proofModal.classList.remove('hidden');
+        return false; // prevent form submission
+    }
+    return true;
+}
+
+function closeModal() {
+    proofModal.classList.add('hidden');
+}
+
+// Initialize
+togglePaymentSection();
+</script>
+
 {% endblock %}

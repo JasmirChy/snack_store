@@ -686,13 +686,127 @@ def inject_global_data():
 
 
 
+# @app.route('/checkout', methods=['GET', 'POST'])
+# @login_required
+# def checkout():
+#     if current_user.is_admin:
+#         flash('Admin users cannot checkout orders', 'error')
+#         return redirect(url_for('admin_dashboard'))
+    
+#     if request.method == 'POST':
+#         name = request.form.get('name')
+#         phone = request.form.get('phone')
+#         country = request.form.get('country')
+#         city = request.form.get('city')
+#         postal_code = request.form.get('postal_code')
+#         street = request.form.get('street')
+#         payment_method = request.form.get('payment_method')
+        
+#         address = f"{name}\n{street}\n{city}, {postal_code}\n{country}\nPhone: {phone}"
+        
+#         cur = mysql.connection.cursor()
+#         cur.execute("""
+#             SELECT p.id, p.price, ci.quantity, (p.price * ci.quantity) as total
+#             FROM cart_items ci
+#             JOIN products p ON ci.product_id = p.id
+#             WHERE ci.user_id = %s
+#         """, (current_user.id,))
+        
+#         cart_items = cur.fetchall()
+        
+#         if not cart_items:
+#             flash('Your cart is empty', 'error')
+#             return redirect(url_for('cart'))
+        
+#         total_amount = sum(item[3] for item in cart_items)
+        
+#         # Check stock availability
+#         for item in cart_items:
+#             cur.execute("SELECT stock FROM products WHERE id = %s", (item[0],))
+#             stock = cur.fetchone()[0]
+#             if stock < item[2]:
+#                 flash(f'Not enough stock for product ID {item[0]}', 'error')
+#                 return redirect(url_for('cart'))
+        
+#         # Insert the order
+#         cur.execute("""
+#             INSERT INTO orders (user_id, total_amount, address, payment_method, status)
+#             VALUES (%s, %s, %s, %s, 'pending')
+#         """, (current_user.id, total_amount, address, payment_method))
+        
+#         order_id = cur.lastrowid
+#         mysql.connection.commit()
+        
+#         # Notify admin
+#         send_admin_notification()
+        
+#         # Insert order items and update stock
+#         for item in cart_items:
+#             cur.execute("""
+#                 INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+#                 VALUES (%s, %s, %s, %s)
+#             """, (order_id, item[0], item[2], item[1]))
+            
+#             cur.execute("UPDATE products SET stock = stock - %s WHERE id = %s", (item[2], item[0]))
+        
+#         # ✅ Fetch product names for email
+#         product_ids = [item[0] for item in cart_items]
+#         cur.execute(
+#             "SELECT title FROM products WHERE id IN (%s)" % ",".join(["%s"]*len(product_ids)),
+#             product_ids
+#         )
+#         product_names = [row[0] for row in cur.fetchall()]
+        
+#         # ✅ Send order placed email to customer
+#         send_customer_order_placed_email(
+#             to_email=current_user.email,
+#             customer_name=current_user.name,
+#             order_id=order_id,
+#             product_names=product_names
+#         )
+        
+#         # Delete cart items after order is placed
+#         cur.execute("DELETE FROM cart_items WHERE user_id = %s", (current_user.id,))
+#         mysql.connection.commit()
+#         cur.close()
+        
+#         flash('Order placed successfully!', 'success')
+#         return redirect(url_for('order_confirmation', order_id=order_id))
+    
+#     # GET method: display checkout page
+#     cur = mysql.connection.cursor()
+#     cur.execute("""
+#         SELECT ci.id, p.id, p.title, p.price, p.image, ci.quantity, (p.price * ci.quantity) as total
+#         FROM cart_items ci
+#         JOIN products p ON ci.product_id = p.id
+#         WHERE ci.user_id = %s
+#     """, (current_user.id,))
+    
+#     cart_items = cur.fetchall()
+#     grand_total = sum(item[6] for item in cart_items)
+    
+#     if not cart_items:
+#         flash('Your cart is empty', 'error')
+#         return redirect(url_for('cart'))
+    
+#     cur.close()
+    
+#     return render_template('cart/checkout.html', cart_items=cart_items, grand_total=grand_total)
+
+
 @app.route('/checkout', methods=['GET', 'POST'])
 @login_required
 def checkout():
     if current_user.is_admin:
         flash('Admin users cannot checkout orders', 'error')
         return redirect(url_for('admin_dashboard'))
-    
+
+    cur = mysql.connection.cursor()
+
+    # Fetch QR setting (tuple: id, key_name, value)
+    cur.execute("SELECT * FROM settings WHERE key_name='payment_qr'")
+    qr_setting = cur.fetchone()  # qr_setting[2] will be the QR filename
+
     if request.method == 'POST':
         name = request.form.get('name')
         phone = request.form.get('phone')
@@ -701,55 +815,53 @@ def checkout():
         postal_code = request.form.get('postal_code')
         street = request.form.get('street')
         payment_method = request.form.get('payment_method')
-        
+
+        # For online payment, check if proof is uploaded
+        payment_proof = request.files.get('payment_proof') if payment_method == 'online' else None
+        if payment_method == 'online' and not payment_proof:
+            flash('Please upload payment proof before placing the order.', 'error')
+            return redirect(url_for('checkout'))
+
         address = f"{name}\n{street}\n{city}, {postal_code}\n{country}\nPhone: {phone}"
-        
-        cur = mysql.connection.cursor()
+
+        # Fetch cart items
         cur.execute("""
             SELECT p.id, p.price, ci.quantity, (p.price * ci.quantity) as total
             FROM cart_items ci
             JOIN products p ON ci.product_id = p.id
             WHERE ci.user_id = %s
         """, (current_user.id,))
-        
         cart_items = cur.fetchall()
-        
+
         if not cart_items:
             flash('Your cart is empty', 'error')
             return redirect(url_for('cart'))
-        
+
         total_amount = sum(item[3] for item in cart_items)
-        
-        # Check stock availability
+
+        # Check stock
         for item in cart_items:
             cur.execute("SELECT stock FROM products WHERE id = %s", (item[0],))
             stock = cur.fetchone()[0]
             if stock < item[2]:
                 flash(f'Not enough stock for product ID {item[0]}', 'error')
                 return redirect(url_for('cart'))
-        
-        # Insert the order
+
+        # Insert order
         cur.execute("""
-            INSERT INTO orders (user_id, total_amount, address, payment_method, status)
-            VALUES (%s, %s, %s, %s, 'pending')
-        """, (current_user.id, total_amount, address, payment_method))
-        
+            INSERT INTO orders (user_id, total_amount, address, payment_method, status, payment_proof)
+            VALUES (%s, %s, %s, %s, 'pending', %s)
+        """, (
+            current_user.id,
+            total_amount,
+            address,
+            payment_method,
+            payment_proof.filename if payment_proof else None
+        ))
         order_id = cur.lastrowid
         mysql.connection.commit()
-        
-        # Notify admin
-        send_admin_notification()
-        
-        # Insert order items and update stock
-        for item in cart_items:
-            cur.execute("""
-                INSERT INTO order_items (order_id, product_id, quantity, unit_price)
-                VALUES (%s, %s, %s, %s)
-            """, (order_id, item[0], item[2], item[1]))
-            
-            cur.execute("UPDATE products SET stock = stock - %s WHERE id = %s", (item[2], item[0]))
-        
-        # ✅ Fetch product names for email
+
+# ✅ Fetch product names for email
         product_ids = [item[0] for item in cart_items]
         cur.execute(
             "SELECT title FROM products WHERE id IN (%s)" % ",".join(["%s"]*len(product_ids)),
@@ -765,34 +877,52 @@ def checkout():
             product_names=product_names
         )
         
-        # Delete cart items after order is placed
+        # Save uploaded proof if online payment
+        if payment_method == 'online' and payment_proof:
+            proof_path = os.path.join('static/uploads/payment_proofs', payment_proof.filename)
+            payment_proof.save(proof_path)
+
+        # Notify admin
+        send_admin_notification()
+
+        # Insert order items and update stock
+        for item in cart_items:
+            cur.execute("""
+                INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+                VALUES (%s, %s, %s, %s)
+            """, (order_id, item[0], item[2], item[1]))
+            cur.execute("UPDATE products SET stock = stock - %s WHERE id = %s", (item[2], item[0]))
+
+        # Delete cart items
         cur.execute("DELETE FROM cart_items WHERE user_id = %s", (current_user.id,))
         mysql.connection.commit()
         cur.close()
-        
+
         flash('Order placed successfully!', 'success')
         return redirect(url_for('order_confirmation', order_id=order_id))
-    
+
     # GET method: display checkout page
-    cur = mysql.connection.cursor()
     cur.execute("""
         SELECT ci.id, p.id, p.title, p.price, p.image, ci.quantity, (p.price * ci.quantity) as total
         FROM cart_items ci
         JOIN products p ON ci.product_id = p.id
         WHERE ci.user_id = %s
     """, (current_user.id,))
-    
     cart_items = cur.fetchall()
     grand_total = sum(item[6] for item in cart_items)
-    
+
     if not cart_items:
         flash('Your cart is empty', 'error')
         return redirect(url_for('cart'))
-    
-    cur.close()
-    
-    return render_template('cart/checkout.html', cart_items=cart_items, grand_total=grand_total)
 
+    cur.close()
+
+    return render_template(
+        'cart/checkout.html',
+        cart_items=cart_items,
+        grand_total=grand_total,
+        qr_setting=qr_setting  # Pass the tuple to template
+    )
 
 @app.route('/order_confirmation/<int:order_id>')
 @login_required

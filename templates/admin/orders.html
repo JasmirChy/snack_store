@@ -41,8 +41,8 @@
         <td class="px-4 py-3 font-medium text-gray-700">
             {{ order[-1] if order[-1] else '-' }}  <!-- Product names -->
         </td>       
-        <td class="px-4 py-3 font-semibold">{{ order[8] }}</td>
-        <td class="px-4 py-3">{{ order[6] | format_date }}</td>
+        <td class="px-4 py-3 font-semibold">{{ order[7] }}</td>
+        <td class="px-4 py-3">{{ order[5] | format_date }}</td>
         <td class="px-4 py-3">Rs. {{ "%.2f"|format(order[2]) }}</td>
         <td class="px-4 py-3">
             <span class="px-2 py-1 rounded-full text-xs font-semibold
@@ -51,10 +51,10 @@
                 {% elif order[5] == 'shipped' %}bg-indigo-100 text-indigo-800
                 {% elif order[5] == 'delivered' %}bg-green-100 text-green-800
                 {% else %}bg-red-100 text-red-800{% endif %}">
-                {{ order[5]|title }}
+                {{ order[8]|title }}
             </span>
         </td>
-        <td class="px-4 py-3">{{ order[7] if order[7] else '-' }}</td>
+        <td class="px-4 py-3">{{ order[6] if order[6] else '-' }}</td>
         <td class="px-4 py-3">
             <div class="flex space-x-2">
                 <a href="{{ url_for('admin_order_detail', order_id=order[0]) }}" class="text-blue-600 hover:text-blue-800" title="View Details">
