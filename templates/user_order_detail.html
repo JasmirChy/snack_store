@@ -4,44 +4,48 @@
 <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold mb-6">Order #{{ order[0] }}</h1>
 
-    <!-- Order Info -->
-    <div class="bg-[#fffae1] rounded-lg shadow-md p-6 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Left Column -->
-            <div>
-                <p><span class="font-semibold">Order Date:</span> {{ order[6]|format_date }}</p>
-                <p><span class="font-semibold">Payment Method:</span> 
-                    {% if order[3] == 'cod' %}Cash on Delivery{% else %}Online Payment{% endif %}
-                </p>
-                <p><span class="font-semibold">Status:</span> 
-                    <span class="px-2 py-1 rounded-full text-xs font-semibold
-                        {% if order[4] == 'pending' %}bg-yellow-100 text-yellow-800
-                        {% elif order[4] == 'processing' %}bg-blue-100 text-blue-800
-                        {% elif order[4] == 'shipped' %}bg-indigo-100 text-indigo-800
-                        {% elif order[4] == 'delivered' %}bg-green-100 text-green-800
-                        {% else %}bg-red-100 text-red-800{% endif %}">
-                        {{ order[4]|title }}
-                    </span>
-                </p>
-            </div>
+    <!-- Top Section: Order Info + Tracking -->
+    <div class="flex flex-nowrap gap-4 mb-6 overflow-x-auto">
+        <!-- Left Column: Order Info & Payment Proof -->
+        <div class="bg-[#fffae1] rounded-lg shadow-md p-6 flex-shrink-0 min-w-[240px] flex-1">
+            <p><span class="font-semibold">Order Date:</span> {{ order[6]|format_date }}</p>
+            <p><span class="font-semibold">Payment Method:</span> 
+                {% if order[3] == 'cod' %}Cash on Delivery{% else %}Online Payment{% endif %}
+            </p>
 
-            <!-- Right Column -->
-            <div>
-                <p><span class="font-semibold">Shipping Address:</span></p>
-                <p class="text-gray-700">{{ order[2] }}</p>
-                {% if order[7] %}
-                <p><span class="font-semibold">Tracking Number:</span> {{ order[7] }}</p>
-                {% endif %}
+            {% if payment_proof_url %}
+            <div class="mt-4">
+                <p class="font-semibold">Payment Proof:</p>
+                <img src="{{ payment_proof_url }}" alt="Payment Proof" 
+                     class="w-44 h-44 object-contain rounded-md border cursor-pointer"
+                     onclick="openImageModal(this.src)">
             </div>
+            {% endif %}
+
+            <p class="mt-4"><span class="font-semibold">Status:</span> 
+                <span class="px-2 py-1 rounded-full text-xs font-semibold
+                    {% if order[4] == 'pending' %}bg-yellow-100 text-yellow-800
+                    {% elif order[4] == 'processing' %}bg-blue-100 text-blue-800
+                    {% elif order[4] == 'shipped' %}bg-indigo-100 text-indigo-800
+                    {% elif order[4] == 'delivered' %}bg-green-100 text-green-800
+                    {% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ order[4]|title }}
+                </span>
+            </p>
+
+            <p class="mt-2"><span class="font-semibold">Shipping Address:</span></p>
+            <p class="text-gray-700">{{ order[2] }}</p>
+            {% if order[7] %}
+            <p class="mt-2"><span class="font-semibold">Tracking Number:</span> {{ order[7] }}</p>
+            {% endif %}
         </div>
-    </div>
 
-    <!-- Order Tracking -->
-    <div class="bg-[#fffae1] rounded-lg shadow-md p-6 mb-6">
-        <h2 class="text-xl font-semibold mb-4">Order Tracking</h2>
-        <div class="flex items-center justify-between relative">
-            {% for value, label, icon in steps %}
-                <div class="flex-1 flex flex-col items-center relative">
+        <!-- Right Column: Vertical Order Tracking -->
+        <div class="bg-[#fffae1] rounded-lg shadow-md p-4 flex-shrink-0 min-w-[150px]">
+            <h2 class="text-xl font-semibold mb-4 text-center">Order Tracking</h2>
+            <div class="flex flex-col items-center space-y-4">
+                {% for value, label, icon in steps %}
+                <div class="flex flex-col items-center">
                     <div class="flex items-center justify-center w-10 h-10 rounded-full
                         {% if order[4] == 'cancelled' %}
                             {% if value == 'cancelled' %} bg-red-500 text-white {% else %} bg-gray-300 text-gray-600 {% endif %}
@@ -54,19 +58,11 @@
                     </div>
                     <span class="mt-2 text-xs font-medium text-center">{{ label }}</span>
                 </div>
-
                 {% if not loop.last %}
-                    <div class="flex-1 h-1 
-                        {% if order[4] == 'cancelled' %}
-                            bg-gray-300
-                        {% elif loop.index0 < current_index %}
-                            bg-green-500
-                        {% else %}
-                            bg-gray-300
-                        {% endif %}">
-                    </div>
+                <div class="w-px h-6 bg-gray-300 mx-auto"></div>
                 {% endif %}
-            {% endfor %}
+                {% endfor %}
+            </div>
         </div>
     </div>
 
@@ -78,17 +74,23 @@
             <div class="flex border border-gray-200 rounded-md p-4 items-center">
                 <!-- Product Image -->
                 <div class="flex-shrink-0">
-                    <img src="{{ url_for('static', filename='uploads/products/' + item[3]) if item[3] else 'https://via.placeholder.com/120' }}" 
-                        alt="{{ item[0] }}" 
-                        class="w-32 h-32 object-cover rounded-md">
+                    {% if item.image %}
+                        <img src="{{ item.image }}" alt="{{ item.title }}" 
+                             class="w-32 h-32 object-cover rounded-md cursor-pointer"
+                             onclick="openImageModal(this.src)">
+                    {% else %}
+                        <div class="w-32 h-32 flex items-center justify-center bg-gray-200 text-gray-500 rounded-md">
+                            No Image
+                        </div>
+                    {% endif %}
                 </div>
 
                 <!-- Product Details -->
-                <div class="ml-46 pl-4 flex-1 flex flex-col justify-center ">
-                    <h4 class="font-semibold">{{ item[0] }}</h4>  <!-- Product Name -->
-                    <p class="text-gray-700"><span class="font-semibold">Quantity:</span> {{ item[1] }}</p>
-                    <p class="text-gray-700"><span class="font-semibold">Unit Price:</span> Rs. {{ "%.2f"|format(item[2]) }}</p>
-                    <p class="font-semibold mt-1">Subtotal: Rs. {{ "%.2f"|format(item[1]*item[2]) }}</p>
+                <div class="ml-6 flex-1 flex flex-col justify-center">
+                    <h4 class="font-semibold">{{ item.title }}</h4>
+                    <p class="text-gray-700"><span class="font-semibold">Quantity:</span> {{ item.quantity }}</p>
+                    <p class="text-gray-700"><span class="font-semibold">Unit Price:</span> Rs. {{ "%.2f"|format(item.unit_price) }}</p>
+                    <p class="font-semibold mt-1">Subtotal: Rs. {{ "%.2f"|format(item.quantity * item.unit_price) }}</p>
                 </div>
             </div>
             {% endfor %}
@@ -116,4 +118,27 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Image Modal -->
+<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+    <span class="absolute top-5 right-5 text-white text-3xl cursor-pointer" onclick="closeImageModal()">&times;</span>
+    <img id="modalImage" src="" class="max-h-[90%] max-w-[90%] rounded-md shadow-lg">
+</div>
+
+<script>
+function openImageModal(src) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    modalImg.src = src;
+    modal.classList.remove('hidden');
+}
+function closeImageModal() {
+    document.getElementById('imageModal').classList.add('hidden');
+}
+document.getElementById('imageModal').addEventListener('click', function(e) {
+    if (e.target.id === 'imageModal') {
+        closeImageModal();
+    }
+});
+</script>
 {% endblock %}

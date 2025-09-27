@@ -1028,27 +1028,88 @@ def user_orders():
         total_pages=total_pages
     )
 
+# @app.route('/orders/<int:order_id>')
+# @login_required
+# def user_order_detail(order_id):
+#     user_id = current_user.id
+#     cursor = mysql.connection.cursor()
+
+#     cursor.execute("""
+#         SELECT id, total_amount, address, payment_method, status, payment_proof, created_at, tracking_number
+#         FROM orders
+#         WHERE id = %s AND user_id = %s
+#     """, (order_id, user_id))
+#     order = cursor.fetchone()
+#     if not order:
+#         flash("Order not found!", "danger")
+#         return redirect(url_for('user_orders'))
+
+#     # Convert total_amount to float
+#     order = list(order)
+#     order[1] = float(order[1])
+
+#     # Fetch order items with product title
+#     cursor.execute("""
+#         SELECT p.title, oi.quantity, oi.unit_price, p.image
+#         FROM order_items oi
+#         JOIN products p ON oi.product_id = p.id
+#         WHERE oi.order_id = %s
+#     """, (order_id,))
+#     items = cursor.fetchall()
+    
+#     # Convert unit_price to float
+#     items = [(i[0], i[1], float(i[2]), i[3]) for i in items]
+
+#     # Define order steps
+#     steps = [
+#         ("pending", "Pending", "🕒"),
+#         ("confirmed", "Confirmed", "✅"),
+#         ("packed", "Packed", "📦"),
+#         ("shipped", "Shipped", "🚚"),
+#         ("out_for_delivery", "Out for Delivery", "📍"),
+#         ("delivered", "Delivered", "🎉"),
+#         ("cancelled", "Cancelled", "❌"),
+#     ]
+
+#     # Find current step index
+#     status_map = {s[0]: i for i, s in enumerate(steps)}
+#     current_index = status_map.get(order[4], -1)
+
+#     return render_template(
+#         "user_order_detail.html",
+#         order=order,
+#         items=items,
+#         steps=steps,
+#         current_index=current_index
+#     )
+
 @app.route('/orders/<int:order_id>')
 @login_required
 def user_order_detail(order_id):
     user_id = current_user.id
     cursor = mysql.connection.cursor()
 
+    # Fetch order info
     cursor.execute("""
         SELECT id, total_amount, address, payment_method, status, payment_proof, created_at, tracking_number
         FROM orders
         WHERE id = %s AND user_id = %s
     """, (order_id, user_id))
     order = cursor.fetchone()
+
     if not order:
         flash("Order not found!", "danger")
         return redirect(url_for('user_orders'))
 
-    # Convert total_amount to float
     order = list(order)
-    order[1] = float(order[1])
+    order[1] = float(order[1])  # total_amount
 
-    # Fetch order items with product title
+    # Payment proof URL
+    payment_proof_url = None
+    if order[3] == 'online' and order[5]:
+        payment_proof_url = url_for('static', filename='uploads/payment_proofs/' + order[5])
+
+    # Fetch order items with images
     cursor.execute("""
         SELECT p.title, oi.quantity, oi.unit_price, p.image
         FROM order_items oi
@@ -1056,11 +1117,19 @@ def user_order_detail(order_id):
         WHERE oi.order_id = %s
     """, (order_id,))
     items = cursor.fetchall()
-    
-    # Convert unit_price to float
-    items = [(i[0], i[1], float(i[2]), i[3]) for i in items]
 
-    # Define order steps
+    # Build proper URL for product image
+    items = [
+        {
+            "title": i[0],
+            "quantity": i[1],
+            "unit_price": float(i[2]),
+            "image": url_for('static', filename='uploads/products/' + i[3]) if i[3] else url_for('static', filename='images/no-image.png')
+        }
+        for i in items
+    ]
+
+    # Order tracking steps
     steps = [
         ("pending", "Pending", "🕒"),
         ("confirmed", "Confirmed", "✅"),
@@ -1070,17 +1139,21 @@ def user_order_detail(order_id):
         ("delivered", "Delivered", "🎉"),
         ("cancelled", "Cancelled", "❌"),
     ]
-
-    # Find current step index
     status_map = {s[0]: i for i, s in enumerate(steps)}
     current_index = status_map.get(order[4], -1)
+
+    cursor.close()
+
+    # Debug: print fetched items
+    # print(items)
 
     return render_template(
         "user_order_detail.html",
         order=order,
         items=items,
         steps=steps,
-        current_index=current_index
+        current_index=current_index,
+        payment_proof_url=payment_proof_url
     )
 
 
