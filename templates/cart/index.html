@@ -17,7 +17,9 @@
         {% for item in cart_items %}
         <div class="grid grid-cols-12 gap-4 p-4 border-b border-gray-200 items-center">
             <div class="col-span-12 md:col-span-5 flex items-center">
-                <img src="{{ url_for('static', filename='uploads/products/' + item[4]) if item[4] else 'https://via.placeholder.com/80' }}" alt="{{ item[2] }}" class="w-16 h-16 object-cover rounded-md mr-4">
+{% set primary_image = get_primary_image(item[1]) %}
+<img src="{{ url_for('static', filename='uploads/products/' + primary_image) if primary_image else url_for('static', filename='images/default-product.jpg') }}" 
+     alt="{{ item[2] }}" class="w-16 h-16 object-cover rounded-md mr-4">
                 <div>
                     <h3 class="font-semibold">{{ item[2] }}</h3>
                 </div>
