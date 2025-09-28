@@ -5,13 +5,13 @@
     <h1 class="text-3xl font-bold mb-8">Order History</h1>
     
     {% if orders %}
-    <div class="space-y-6">
+    <div class="space-y-6" id="ordersContainer">
         {% for order in orders %}
-        <div class="bg-[#fffae1] rounded-lg shadow-md overflow-hidden">
+        <a href="{{ url_for('user_order_detail', order_id=order[0]) }}" 
+           class="order-card block bg-[#fffae1] rounded-lg shadow-md overflow-hidden {% if loop.index > 4 %}hidden{% endif %} hover:shadow-lg transition duration-200">
             <div class="bg-gray-100 p-4 flex justify-between items-center">
                 <div>
                     <span class="font-semibold">Order #{{ order[0] }}</span>
-                   
                 </div>
                 <div>
                     <span class="px-3 py-1 rounded-full text-xs font-semibold 
@@ -26,27 +26,22 @@
             </div>
             
             <div class="p-4">
-                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <h3 class="font-semibold">Shipping Address</h3>
                         <p class="text-gray-600 whitespace-pre-line">{{ order[3] }}</p>
                     </div>
-                    
                     <div>
                         <h3 class="font-semibold">Payment Method</h3>
                         <p class="text-gray-600">
                             {% if order[4] == 'cod' %}Cash on Delivery{% else %}Online Payment{% endif %}
                         </p>
                         <p class="font-semibold mt-2">Total: {{ format_currency(order[2]) }}</p>
-                        
                         {% if order[6] %}
                         <p class="text-gray-600 mt-2">
                             <strong> Current Status:</strong> {{ order[6] }}
                         </p>
                         {% endif %}
-                        
-                        <!-- Try to find the date in common indices -->
                         <p class="text-gray-600 mt-2">
                             <strong>Order Date:</strong> 
                             {% if order[7] %}{{ order[7] | format_date }}
@@ -84,9 +79,18 @@
                 </div>
                 {% endif %}
             </div>
-        </div>
+        </a>
         {% endfor %}
     </div>
+
+    {% if orders|length > 4 %}
+    <div class="text-center mt-4">
+        <button id="toggleOrdersBtn" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300">
+            View More
+        </button>
+    </div>
+    {% endif %}
+
     {% else %}
     <div class="bg-white rounded-lg shadow-md p-8 text-center">
         <i class="fas fa-box-open text-5xl text-gray-300 mb-4"></i>
@@ -99,19 +103,35 @@
     {% endif %}
 </div>
 
-<!-- JavaScript to help identify the date index -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Look for date patterns in the debug text
-    const debugText = document.querySelectorAll('.bg-gray-100 .text-xs');
-    debugText.forEach(el => {
-        console.log('Debug info:', el.textContent);
-        
-        // Look for date patterns (YYYY-MM-DD or similar)
-        const text = el.textContent;
-        const dateMatch = text.match(/(\d{4}[-/]\d{2}[-/]\d{2})|(\d{2}[-/]\d{2}[-/]\d{4})/);
-        if (dateMatch) {
-            console.log('Found date pattern:', dateMatch[0]);
+    const toggleBtn = document.getElementById('toggleOrdersBtn');
+    const orderCards = Array.from(document.querySelectorAll('#ordersContainer .order-card'));
+    const batchSize = 4;
+    let currentCount = batchSize;
+
+    toggleBtn && toggleBtn.addEventListener('click', () => {
+        const totalOrders = orderCards.length;
+
+        if (currentCount < totalOrders) {
+            // Show next batch
+            const nextCount = Math.min(currentCount + batchSize, totalOrders);
+            for (let i = currentCount; i < nextCount; i++) {
+                orderCards[i].classList.remove('hidden');
+            }
+            currentCount = nextCount;
+
+            // Show "View Less" only if all are visible
+            if (currentCount >= totalOrders) {
+                toggleBtn.textContent = 'View Less';
+            }
+        } else {
+            // Collapse all except first batch
+            orderCards.forEach((card, index) => {
+                if (index >= batchSize) card.classList.add('hidden');
+            });
+            currentCount = batchSize;
+            toggleBtn.textContent = 'View More';
         }
     });
 });

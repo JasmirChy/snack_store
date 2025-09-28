@@ -325,6 +325,21 @@ def admin_add_slider():
 
     return redirect(url_for('admin_slider'))
 
+@app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
+@login_required
+def delete_user(user_id):
+    if not current_user.is_admin:
+        flash("Unauthorized access!", "danger")
+        return redirect(url_for('admin_users'))
+
+    cursor = mysql.connection.cursor()
+    cursor.execute("DELETE FROM users WHERE id=%s", (user_id,))
+    mysql.connection.commit()
+    cursor.close()
+
+    flash("User deleted successfully!", "success")
+    return redirect(url_for('admin_users'))
+
 @app.route('/admin/slider/delete/<int:item_id>')
 @login_required
 def admin_delete_slider(item_id):
@@ -684,116 +699,6 @@ def inject_global_data():
         get_image_count=get_image_count  # Add this line
     )
 
-
-
-# @app.route('/checkout', methods=['GET', 'POST'])
-# @login_required
-# def checkout():
-#     if current_user.is_admin:
-#         flash('Admin users cannot checkout orders', 'error')
-#         return redirect(url_for('admin_dashboard'))
-    
-#     if request.method == 'POST':
-#         name = request.form.get('name')
-#         phone = request.form.get('phone')
-#         country = request.form.get('country')
-#         city = request.form.get('city')
-#         postal_code = request.form.get('postal_code')
-#         street = request.form.get('street')
-#         payment_method = request.form.get('payment_method')
-        
-#         address = f"{name}\n{street}\n{city}, {postal_code}\n{country}\nPhone: {phone}"
-        
-#         cur = mysql.connection.cursor()
-#         cur.execute("""
-#             SELECT p.id, p.price, ci.quantity, (p.price * ci.quantity) as total
-#             FROM cart_items ci
-#             JOIN products p ON ci.product_id = p.id
-#             WHERE ci.user_id = %s
-#         """, (current_user.id,))
-        
-#         cart_items = cur.fetchall()
-        
-#         if not cart_items:
-#             flash('Your cart is empty', 'error')
-#             return redirect(url_for('cart'))
-        
-#         total_amount = sum(item[3] for item in cart_items)
-        
-#         # Check stock availability
-#         for item in cart_items:
-#             cur.execute("SELECT stock FROM products WHERE id = %s", (item[0],))
-#             stock = cur.fetchone()[0]
-#             if stock < item[2]:
-#                 flash(f'Not enough stock for product ID {item[0]}', 'error')
-#                 return redirect(url_for('cart'))
-        
-#         # Insert the order
-#         cur.execute("""
-#             INSERT INTO orders (user_id, total_amount, address, payment_method, status)
-#             VALUES (%s, %s, %s, %s, 'pending')
-#         """, (current_user.id, total_amount, address, payment_method))
-        
-#         order_id = cur.lastrowid
-#         mysql.connection.commit()
-        
-#         # Notify admin
-#         send_admin_notification()
-        
-#         # Insert order items and update stock
-#         for item in cart_items:
-#             cur.execute("""
-#                 INSERT INTO order_items (order_id, product_id, quantity, unit_price)
-#                 VALUES (%s, %s, %s, %s)
-#             """, (order_id, item[0], item[2], item[1]))
-            
-#             cur.execute("UPDATE products SET stock = stock - %s WHERE id = %s", (item[2], item[0]))
-        
-#         # ✅ Fetch product names for email
-#         product_ids = [item[0] for item in cart_items]
-#         cur.execute(
-#             "SELECT title FROM products WHERE id IN (%s)" % ",".join(["%s"]*len(product_ids)),
-#             product_ids
-#         )
-#         product_names = [row[0] for row in cur.fetchall()]
-        
-#         # ✅ Send order placed email to customer
-#         send_customer_order_placed_email(
-#             to_email=current_user.email,
-#             customer_name=current_user.name,
-#             order_id=order_id,
-#             product_names=product_names
-#         )
-        
-#         # Delete cart items after order is placed
-#         cur.execute("DELETE FROM cart_items WHERE user_id = %s", (current_user.id,))
-#         mysql.connection.commit()
-#         cur.close()
-        
-#         flash('Order placed successfully!', 'success')
-#         return redirect(url_for('order_confirmation', order_id=order_id))
-    
-#     # GET method: display checkout page
-#     cur = mysql.connection.cursor()
-#     cur.execute("""
-#         SELECT ci.id, p.id, p.title, p.price, p.image, ci.quantity, (p.price * ci.quantity) as total
-#         FROM cart_items ci
-#         JOIN products p ON ci.product_id = p.id
-#         WHERE ci.user_id = %s
-#     """, (current_user.id,))
-    
-#     cart_items = cur.fetchall()
-#     grand_total = sum(item[6] for item in cart_items)
-    
-#     if not cart_items:
-#         flash('Your cart is empty', 'error')
-#         return redirect(url_for('cart'))
-    
-#     cur.close()
-    
-#     return render_template('cart/checkout.html', cart_items=cart_items, grand_total=grand_total)
-
-
 @app.route('/checkout', methods=['GET', 'POST'])
 @login_required
 def checkout():
@@ -1028,61 +933,6 @@ def user_orders():
         total_pages=total_pages
     )
 
-# @app.route('/orders/<int:order_id>')
-# @login_required
-# def user_order_detail(order_id):
-#     user_id = current_user.id
-#     cursor = mysql.connection.cursor()
-
-#     cursor.execute("""
-#         SELECT id, total_amount, address, payment_method, status, payment_proof, created_at, tracking_number
-#         FROM orders
-#         WHERE id = %s AND user_id = %s
-#     """, (order_id, user_id))
-#     order = cursor.fetchone()
-#     if not order:
-#         flash("Order not found!", "danger")
-#         return redirect(url_for('user_orders'))
-
-#     # Convert total_amount to float
-#     order = list(order)
-#     order[1] = float(order[1])
-
-#     # Fetch order items with product title
-#     cursor.execute("""
-#         SELECT p.title, oi.quantity, oi.unit_price, p.image
-#         FROM order_items oi
-#         JOIN products p ON oi.product_id = p.id
-#         WHERE oi.order_id = %s
-#     """, (order_id,))
-#     items = cursor.fetchall()
-    
-#     # Convert unit_price to float
-#     items = [(i[0], i[1], float(i[2]), i[3]) for i in items]
-
-#     # Define order steps
-#     steps = [
-#         ("pending", "Pending", "🕒"),
-#         ("confirmed", "Confirmed", "✅"),
-#         ("packed", "Packed", "📦"),
-#         ("shipped", "Shipped", "🚚"),
-#         ("out_for_delivery", "Out for Delivery", "📍"),
-#         ("delivered", "Delivered", "🎉"),
-#         ("cancelled", "Cancelled", "❌"),
-#     ]
-
-#     # Find current step index
-#     status_map = {s[0]: i for i, s in enumerate(steps)}
-#     current_index = status_map.get(order[4], -1)
-
-#     return render_template(
-#         "user_order_detail.html",
-#         order=order,
-#         items=items,
-#         steps=steps,
-#         current_index=current_index
-#     )
-
 @app.route('/orders/<int:order_id>')
 @login_required
 def user_order_detail(order_id):
@@ -1109,7 +959,7 @@ def user_order_detail(order_id):
     if order[3] == 'online' and order[5]:
         payment_proof_url = url_for('static', filename='uploads/payment_proofs/' + order[5])
 
-    # Fetch order items with images
+    # ✅ Fetch order items with product image
     cursor.execute("""
         SELECT p.title, oi.quantity, oi.unit_price, p.image
         FROM order_items oi
@@ -1118,15 +968,15 @@ def user_order_detail(order_id):
     """, (order_id,))
     items = cursor.fetchall()
 
-    # Build proper URL for product image
+    # ✅ Build proper URLs for product image
     items = [
-        {
-            "title": i[0],
-            "quantity": i[1],
-            "unit_price": float(i[2]),
-            "image": url_for('static', filename='uploads/products/' + i[3]) if i[3] else url_for('static', filename='images/no-image.png')
-        }
-        for i in items
+    {
+        "title": i[0],
+        "quantity": i[1],
+        "unit_price": float(i[2]),
+        "image": url_for('static', filename='uploads/products/' + i[3]) if i[3] else url_for('static', filename='images/no-image.png')
+    }
+    for i in items
     ]
 
     # Order tracking steps
@@ -1144,9 +994,6 @@ def user_order_detail(order_id):
 
     cursor.close()
 
-    # Debug: print fetched items
-    # print(items)
-
     return render_template(
         "user_order_detail.html",
         order=order,
@@ -1155,7 +1002,6 @@ def user_order_detail(order_id):
         current_index=current_index,
         payment_proof_url=payment_proof_url
     )
-
 
 @app.route('/upload_payment_proof/<int:order_id>', methods=['POST'])
 @login_required
@@ -1371,98 +1217,6 @@ def admin_products():
     
     return render_template('admin/products.html', products=products)
 
-# @app.route('/admin/products/add', methods=['GET', 'POST'])
-# @login_required
-# def admin_add_product():
-#     if not current_user.is_admin:
-#         flash('Access denied', 'error')
-#         return redirect(url_for('index'))
-    
-#     if request.method == 'POST':
-#         title = request.form.get('title')
-#         description = request.form.get('description')
-#         price = float(request.form.get('price'))
-#         stock = int(request.form.get('stock'))
-#         category_id = request.form.get('category_id')
-        
-#         image_filename = None
-#         if 'image' in request.files:
-#             file = request.files['image']
-#             if file and file.filename != '' and allowed_file(file.filename):
-#                 filename = secure_filename(f"{uuid.uuid4().hex}_{file.filename}")
-#                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'products', filename)
-#                 os.makedirs(os.path.dirname(filepath), exist_ok=True)
-#                 file.save(filepath)
-#                 image_filename = filename
-        
-#         cur = mysql.connection.cursor()
-#         cur.execute("""
-#             INSERT INTO products (title, description, price, stock, category_id, image)
-#             VALUES (%s, %s, %s, %s, %s, %s)
-#         """, (title, description, price, stock, category_id, image_filename))
-        
-#         mysql.connection.commit()
-#         cur.close()
-        
-#         flash('Product added successfully', 'success')
-#         return redirect(url_for('admin_products'))
-    
-#     categories = get_categories()
-#     return render_template('admin/product_form.html', categories=categories)
-
-# @app.route('/admin/products/edit/<int:product_id>', methods=['GET', 'POST'])
-# @login_required
-# def admin_edit_product(product_id):
-#     if not current_user.is_admin:
-#         flash('Access denied', 'error')
-#         return redirect(url_for('index'))
-    
-#     cur = mysql.connection.cursor()
-    
-#     if request.method == 'POST':
-#         title = request.form.get('title')
-#         description = request.form.get('description')
-#         price = float(request.form.get('price'))
-#         stock = int(request.form.get('stock'))
-#         category_id = request.form.get('category_id')
-        
-#         image_filename = None
-#         if 'image' in request.files:
-#             file = request.files['image']
-#             if file and file.filename != '' and allowed_file(file.filename):
-#                 filename = secure_filename(f"{uuid.uuid4().hex}_{file.filename}")
-#                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'products', filename)
-#                 os.makedirs(os.path.dirname(filepath), exist_ok=True)
-#                 file.save(filepath)
-#                 image_filename = filename
-        
-#         if image_filename:
-#             cur.execute("""
-#                 UPDATE products 
-#                 SET title = %s, description = %s, price = %s, stock = %s, category_id = %s, image = %s
-#                 WHERE id = %s
-#             """, (title, description, price, stock, category_id, image_filename, product_id))
-#         else:
-#             cur.execute("""
-#                 UPDATE products 
-#                 SET title = %s, description = %s, price = %s, stock = %s, category_id = %s
-#                 WHERE id = %s
-#             """, (title, description, price, stock, category_id, product_id))
-        
-#         mysql.connection.commit()
-#         cur.close()
-        
-#         flash('Product updated successfully', 'success')
-#         return redirect(url_for('admin_products'))
-    
-#     cur.execute("SELECT * FROM products WHERE id = %s", (product_id,))
-#     product = cur.fetchone()
-    
-#     categories = get_categories()
-#     cur.close()
-    
-#     return render_template('admin/product_form.html', product=product, categories=categories)
-
 # Update the admin_add_product function
 @app.route('/admin/products/add', methods=['GET', 'POST'])
 @login_required
@@ -1574,9 +1328,6 @@ def admin_edit_product(product_id):
     
     return render_template('admin/product_form.html', product=product, categories=categories, product_images=product_images)
 
-
-
-
 @app.route('/admin/products/delete/<int:product_id>')
 @login_required
 def admin_delete_product(product_id):
@@ -1607,8 +1358,6 @@ def admin_orders():
     offset = (page - 1) * per_page
 
     cur = mysql.connection.cursor()
-    
-   
     
     if status_filter:
         cur.execute("""
@@ -1652,7 +1401,6 @@ def admin_orders():
         total_pages=total_pages,
     )
     
-
 @app.route('/admin/orders/update_status/<int:order_id>', methods=['POST'])
 @login_required
 def admin_update_order_status(order_id):

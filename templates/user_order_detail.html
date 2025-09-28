@@ -2,46 +2,92 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-6">Order #{{ order[0] }}</h1>
+    <h1 class="text-3xl font-bold ml-16 mb-6 pl-14">Order ID #{{ order[0] }}</h1>
+ 
+    <!-- Main Layout: Left (Order Info + Products) and Right (Tracking) -->
+    <div class="flex flex-nowrap gap-4 items-start justify-center">
+        
+        <!-- LEFT SIDE (Order Info + Products stacked) -->
+        <div class="flex flex-col w-full md:w-[65%] space-y-6">
+            
+            <!-- Order Info -->
+            <div class="bg-[#fffae1] rounded-lg shadow-md p-6">
+                <p><span class="font-semibold">Order Date:</span> {{ order[6]|format_date }}</p>
+                <p><span class="font-semibold">Payment Method:</span> 
+                    {% if order[3] == 'cod' %}Cash on Delivery{% else %}Online Payment{% endif %}
+                </p>
 
-    <!-- Top Section: Order Info + Tracking -->
-    <div class="flex flex-nowrap gap-4 mb-6 overflow-x-auto">
-        <!-- Left Column: Order Info & Payment Proof -->
-        <div class="bg-[#fffae1] rounded-lg shadow-md p-6 flex-shrink-0 min-w-[240px] flex-1">
-            <p><span class="font-semibold">Order Date:</span> {{ order[6]|format_date }}</p>
-            <p><span class="font-semibold">Payment Method:</span> 
-                {% if order[3] == 'cod' %}Cash on Delivery{% else %}Online Payment{% endif %}
-            </p>
+                {% if payment_proof_url %}
+                <div class="mt-4">
+                    <p class="font-semibold">Payment Proof:</p>
+                    <img src="{{ payment_proof_url }}" alt="Payment Proof" 
+                         class="w-44 h-44 object-contain rounded-md border cursor-pointer"
+                         onclick="openImageModal(this.src)">
+                </div>
+                {% endif %}
 
-            {% if payment_proof_url %}
-            <div class="mt-4">
-                <p class="font-semibold">Payment Proof:</p>
-                <img src="{{ payment_proof_url }}" alt="Payment Proof" 
-                     class="w-44 h-44 object-contain rounded-md border cursor-pointer"
-                     onclick="openImageModal(this.src)">
+                <p class="mt-4"><span class="font-semibold">Status:</span> 
+                    <span class="px-2 py-1 rounded-full text-xs font-semibold
+                        {% if order[4] == 'pending' %}bg-yellow-100 text-yellow-800
+                        {% elif order[4] == 'processing' %}bg-blue-100 text-blue-800
+                        {% elif order[4] == 'shipped' %}bg-indigo-100 text-indigo-800
+                        {% elif order[4] == 'delivered' %}bg-green-100 text-green-800
+                        {% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ order[4]|title }}
+                    </span>
+                </p>
+
+                <p class="mt-2"><span class="font-semibold">Shipping Address:</span></p>
+                <p class="text-gray-700">{{ order[2] }}</p>
+                {% if order[7] %}
+                <p class="mt-2"><span class="font-semibold">Tracking Number:</span> {{ order[7] }}</p>
+                {% endif %}
             </div>
-            {% endif %}
 
-            <p class="mt-4"><span class="font-semibold">Status:</span> 
-                <span class="px-2 py-1 rounded-full text-xs font-semibold
-                    {% if order[4] == 'pending' %}bg-yellow-100 text-yellow-800
-                    {% elif order[4] == 'processing' %}bg-blue-100 text-blue-800
-                    {% elif order[4] == 'shipped' %}bg-indigo-100 text-indigo-800
-                    {% elif order[4] == 'delivered' %}bg-green-100 text-green-800
-                    {% else %}bg-red-100 text-red-800{% endif %}">
-                    {{ order[4]|title }}
-                </span>
-            </p>
+            <!-- Ordered Products -->
+            <div class="bg-[#fffae1] rounded-lg shadow-md p-6 flex-grow">
+                <h2 class="text-2xl font-semibold mb-4">Products in this Order</h2>
+                <div class="space-y-4">
+                    {% for item in items %}
+                    <!-- Responsive Layout: image above on mobile, side-by-side on desktop -->
+                    <div class="flex flex-col md:flex-row border border-gray-200 rounded-md p-4 items-center md:items-start">
+                        
+                        <!-- Product Image -->
+                        <div class="flex-shrink-0 mb-4 md:mb-0 md:mr-6">
+                            {% if item.image %}
+                              <img src="{{ item.image }}"
+                                alt="{{ item.title }}" 
+                                class="w-32 h-32 object-cover rounded-md cursor-pointer"
+                                onclick="openImageModal(this.src)">
 
-            <p class="mt-2"><span class="font-semibold">Shipping Address:</span></p>
-            <p class="text-gray-700">{{ order[2] }}</p>
-            {% if order[7] %}
-            <p class="mt-2"><span class="font-semibold">Tracking Number:</span> {{ order[7] }}</p>
-            {% endif %}
+
+                            {% else %}
+                                <div class="w-32 h-32 flex items-center justify-center bg-gray-200 text-gray-500 rounded-md">
+                                    No Image
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Product Details -->
+                        <div class="flex-1 flex flex-col justify-center  md:text-left">
+                            <h4 class="font-semibold">{{ item.title }}</h4>
+                            <p class="text-gray-700"><span class="font-semibold">Quantity:</span> {{ item.quantity }}</p>
+                            <p class="text-gray-700"><span class="font-semibold">Unit Price:</span> Rs. {{ "%.2f"|format(item.unit_price) }}</p>
+                            <p class="font-semibold mt-1">Subtotal: Rs. {{ "%.2f"|format(item.quantity * item.unit_price) }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Total Amount -->
+                <div class="text-right mt-6 mr-10">
+                    <p class="text-lg font-semibold">Total: Rs. {{ "%.2f"|format(order[1]|float) }}</p>
+                </div>
+            </div>
         </div>
 
-        <!-- Right Column: Vertical Order Tracking -->
-        <div class="bg-[#fffae1] rounded-lg shadow-md p-4 flex-shrink-0 min-w-[150px]">
+        <!-- RIGHT SIDE (Order Tracking) -->
+        <div class="bg-[#fffae1] rounded-lg shadow-md p-4 flex-shrink-0 min-w-[150px] h-full self-stretch">
             <h2 class="text-xl font-semibold mb-4 text-center">Order Tracking</h2>
             <div class="flex flex-col items-center space-y-4">
                 {% for value, label, icon in steps %}
@@ -66,44 +112,8 @@
         </div>
     </div>
 
-    <!-- Ordered Products -->
-    <div class="bg-[#fffae1] rounded-lg shadow-md p-6 mb-6">
-        <h2 class="text-2xl font-semibold mb-4">Products in this Order</h2>
-        <div class="space-y-4">
-            {% for item in items %}
-            <div class="flex border border-gray-200 rounded-md p-4 items-center">
-                <!-- Product Image -->
-                <div class="flex-shrink-0">
-                    {% if item.image %}
-                        <img src="{{ item.image }}" alt="{{ item.title }}" 
-                             class="w-32 h-32 object-cover rounded-md cursor-pointer"
-                             onclick="openImageModal(this.src)">
-                    {% else %}
-                        <div class="w-32 h-32 flex items-center justify-center bg-gray-200 text-gray-500 rounded-md">
-                            No Image
-                        </div>
-                    {% endif %}
-                </div>
-
-                <!-- Product Details -->
-                <div class="ml-6 flex-1 flex flex-col justify-center">
-                    <h4 class="font-semibold">{{ item.title }}</h4>
-                    <p class="text-gray-700"><span class="font-semibold">Quantity:</span> {{ item.quantity }}</p>
-                    <p class="text-gray-700"><span class="font-semibold">Unit Price:</span> Rs. {{ "%.2f"|format(item.unit_price) }}</p>
-                    <p class="font-semibold mt-1">Subtotal: Rs. {{ "%.2f"|format(item.quantity * item.unit_price) }}</p>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-
-        <!-- Total Amount -->
-        <div class="text-right mt-6 mr-10">
-            <p class="text-lg font-semibold">Total: Rs. {{ "%.2f"|format(order[1]|float) }}</p>
-        </div>
-    </div>
-
     <!-- Action Buttons -->
-    <div class="text-center space-x-4">
+    <div class="text-center space-x-4 mt-6">
         <a href="{{ url_for('user_orders') }}" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300">
             Back to Orders
         </a>
