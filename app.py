@@ -51,8 +51,8 @@ def send_customer_order_placed_email(to_email, customer_name, order_id, product_
     products_list = ", ".join(product_names)
 
     body = f"""
-    SwadGaLLi 
-
+    SwadGaLLi
+    
     Hello {customer_name},
 
     Your order (Order ID: {order_id}) has been placed successfully.
@@ -76,6 +76,7 @@ def send_customer_order_placed_email(to_email, customer_name, order_id, product_
             print(f"Order placed email sent to {to_email}")
     except Exception as e:
         print(f"Failed to send order placed email: {e}")
+
 
 def send_customer_order_status_email(to_email, customer_name, order_id, status, tracking_number=None):
     sender_email = "info.swadgalli@gmail.com"
@@ -101,9 +102,9 @@ def send_customer_order_status_email(to_email, customer_name, order_id, status, 
     body = f"""
     Hello {customer_name},
 
-    Your order (Order ID: {order_id}) status has been updated.
+    Your order (Order ID: {order_id}) has been {friendly_status}.
 
-    Your order is {friendly_status}{tracking_info}
+     {tracking_info}
 
     Thank you for shopping with SwadGaLLi!
     """
@@ -957,7 +958,7 @@ def checkout():
             flash('Your cart is empty', 'error')
             return redirect(url_for('cart'))
 
-        # Calculate totals with discount consideration
+        # Calculate totals
         total_amount = 0.0
         total_original_amount = 0.0
         total_savings = 0.0
@@ -965,54 +966,44 @@ def checkout():
 
         for item in cart_items_data:
             product_id, title, price, discount_percent, original_price, quantity = item
-            
-            # Convert all values to float to ensure consistent types
             price_float = float(price) if price is not None else 0.0
             discount_percent_float = float(discount_percent) if discount_percent is not None else 0.0
             original_price_float = float(original_price) if original_price is not None else price_float
             quantity_int = int(quantity)
-            
-            # Calculate the correct prices
+
             if discount_percent_float > 0:
-                # If we have a discount, use original_price as the base
                 actual_original_price = original_price_float
                 actual_discounted_price = calculate_discounted_price(actual_original_price, discount_percent_float)
             else:
-                # No discount, both prices are the same
                 actual_original_price = price_float
                 actual_discounted_price = price_float
-            
+
             item_total = actual_discounted_price * quantity_int
             item_original_total = actual_original_price * quantity_int
             item_savings = float(item_original_total - item_total)
-            
+
             total_amount += item_total
             total_original_amount += item_original_total
             total_savings += item_savings
-            
+
             order_items_data.append({
                 'product_id': product_id,
                 'quantity': quantity_int,
-                'unit_price': actual_discounted_price,
-                'original_unit_price': actual_original_price,
-                'discount_percent': discount_percent_float,
-                'item_total': item_total,
-                'item_original_total': item_original_total,
-                'item_savings': item_savings
+                'unit_price': actual_discounted_price
             })
 
-        # Check stock
+        # Stock check
         for item in cart_items_data:
             product_id, _, _, _, _, quantity = item
             cur.execute("SELECT stock FROM products WHERE id = %s", (product_id,))
             stock_result = cur.fetchone()
             stock_quantity = stock_result[0] if stock_result else 0
             if stock_quantity < int(quantity):
-                flash(f'Not enough stock for one or more products', 'error')
+                flash('Not enough stock for one or more products', 'error')
                 cur.close()
                 return redirect(url_for('cart'))
 
-        # Insert order with discount information
+        # Insert order
         cur.execute("""
             INSERT INTO orders (user_id, total_amount, address, payment_method, status, payment_proof)
             VALUES (%s, %s, %s, %s, 'pending', %s)
@@ -1028,50 +1019,46 @@ def checkout():
 
         # Fetch product names for email
         product_ids = [item[0] for item in cart_items_data]
+        product_names = []
         if product_ids:
             cur.execute(
                 "SELECT title FROM products WHERE id IN (%s)" % ",".join(["%s"]*len(product_ids)),
                 product_ids
             )
             product_names = [row[0] for row in cur.fetchall()]
-        else:
-            product_names = []
-        
-        # Send order placed email to customer
+
+        # ✅ Send customer order placed email
         send_customer_order_placed_email(
             to_email=current_user.email,
             customer_name=current_user.name,
             order_id=order_id,
-            product_names=product_names,
-            total_amount=total_amount,
-            total_savings=total_savings if total_savings > 0 else None
+            product_names=product_names
         )
-        
-        # Save uploaded proof if online payment
+
+        # Save uploaded proof if online
         if payment_method == 'online' and payment_proof:
             filename = secure_filename(f"{uuid.uuid4().hex}_{payment_proof.filename}")
             proof_path = os.path.join(app.config['UPLOAD_FOLDER'], 'payment_proofs', filename)
             os.makedirs(os.path.dirname(proof_path), exist_ok=True)
             payment_proof.save(proof_path)
-            
-            # Update order with the saved filename
+
             cur.execute("UPDATE orders SET payment_proof = %s WHERE id = %s", (filename, order_id))
             mysql.connection.commit()
 
         # Notify admin
         send_admin_notification()
 
-        # Insert order items with discounted prices and update stock
+        # Insert order items + update stock
         for item_data in order_items_data:
             cur.execute("""
                 INSERT INTO order_items (order_id, product_id, quantity, unit_price)
                 VALUES (%s, %s, %s, %s)
             """, (order_id, item_data['product_id'], item_data['quantity'], item_data['unit_price']))
-            
-            cur.execute("UPDATE products SET stock = stock - %s WHERE id = %s", 
-                       (item_data['quantity'], item_data['product_id']))
 
-        # Delete cart items
+            cur.execute("UPDATE products SET stock = stock - %s WHERE id = %s",
+                        (item_data['quantity'], item_data['product_id']))
+
+        # Clear cart
         cur.execute("DELETE FROM cart_items WHERE user_id = %s", (current_user.id,))
         mysql.connection.commit()
         cur.close()
@@ -1079,15 +1066,15 @@ def checkout():
         flash('Order placed successfully!' + (f' You saved {format_currency(total_savings)}!' if total_savings > 0 else ''), 'success')
         return redirect(url_for('order_confirmation', order_id=order_id))
 
-    # GET method: display checkout page
+    # GET → render checkout page
     cur.execute("""
         SELECT ci.id, p.id, p.title, p.price, p.discount_percent, p.original_price, p.image, ci.quantity
         FROM cart_items ci
         JOIN products p ON ci.product_id = p.id
         WHERE ci.user_id = %s
     """, (current_user.id,))
-    
     cart_items_data = cur.fetchall()
+
     cart_items = []
     grand_total = 0.0
     total_savings = 0.0
@@ -1095,27 +1082,22 @@ def checkout():
 
     for item in cart_items_data:
         cart_item_id, product_id, title, price, discount_percent, original_price, image, quantity = item
-        
-        # Convert to proper types
         price_float = float(price) if price is not None else 0.0
         discount_percent_float = float(discount_percent) if discount_percent is not None else 0.0
         original_price_float = float(original_price) if original_price is not None else price_float
         quantity_int = int(quantity)
-        
-        # Calculate the correct prices for display
+
         if discount_percent_float > 0:
-            # Use original_price as the base for calculation
             display_original_price = original_price_float
             display_discounted_price = calculate_discounted_price(display_original_price, discount_percent_float)
         else:
-            # No discount, both prices are the same
             display_original_price = price_float
             display_discounted_price = price_float
-        
+
         item_total_original = display_original_price * quantity_int
         item_total_discounted = display_discounted_price * quantity_int
         item_savings = item_total_original - item_total_discounted
-        
+
         cart_item = {
             'id': cart_item_id,
             'product_id': product_id,
@@ -1135,11 +1117,10 @@ def checkout():
             'item_savings': item_savings,
             'display_price': display_discounted_price
         }
-        
+
         cart_items.append(cart_item)
         grand_total += item_total_discounted
         total_savings += item_savings
-        
         if discount_percent_float > 0:
             has_discounted_items = True
 
@@ -1158,44 +1139,6 @@ def checkout():
         has_discounted_items=has_discounted_items,
         qr_setting=qr_setting
     )
-def send_customer_order_placed_email(to_email, customer_name, order_id, product_names, total_amount, total_savings=None):
-    sender_email = "info.swadgalli@gmail.com"
-    sender_password = "chfy qktf tnuz esgl"  # Gmail app password
-
-    subject = f"Your Order #{order_id} has been placed successfully!"
-    products_list = ", ".join(product_names)
-
-    body = f"""
-    Hello {customer_name},
-
-    Your order (Order ID: {order_id}) has been placed successfully.
-
-    Products in your order: {products_list}
-
-    Total Amount: रु {total_amount:,.2f}
-    """
-
-    if total_savings and total_savings > 0:
-        body += f"You saved: रु {total_savings:,.2f}\n\n"
-
-    body += """
-    Thank you for shopping with SwadGaLLi!
-    """
-
-    msg = MIMEMultipart()
-    msg["From"] = sender_email
-    msg["To"] = to_email
-    msg["Subject"] = subject
-    msg.attach(MIMEText(body, "plain"))
-
-    try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, to_email, msg.as_string())
-            print(f"Order placed email sent to {to_email}")
-    except Exception as e:
-        print(f"Failed to send order placed email: {e}")
 
 @app.route('/order_confirmation/<int:order_id>')
 @login_required
