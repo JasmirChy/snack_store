@@ -50,7 +50,10 @@ MAIL_DEFAULT_SENDER = 'info.swadgalli@gmail.com'
 # Pagination settings
 PRODUCTS_PER_PAGE = 12
 ORDERS_PER_PAGE = 10
-
+# Add to config.py
+# Discount settings
+MAX_DISCOUNT_PERCENT = 100.0
+DEFAULT_DISCOUNT = 0.0
 # Currency settings
 DEFAULT_CURRENCY = 'NPR'
 CURRENCY_SYMBOL = 'रु'

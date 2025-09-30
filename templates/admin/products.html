@@ -11,56 +11,79 @@
     
     <div class="bg-white rounded-lg shadow-md overflow-x-auto">
         <table class="w-full ">
-            <thead>
-                <tr class="bg-gray-100">
-                    <th class="px-4 py-3 text-left">Product</th>
-                    <th class="px-4 py-3 text-left">Category</th>
-                    <th class="px-4 py-3 text-left">Price</th>
-                    <th class="px-4 py-3 text-left">Stock</th>
-                    <th class="px-4 py-3 text-left">Images</th>
-                    <th class="px-4 py-3 text-left">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for product in products %}
-                <tr class="border-b border-gray-200">
-                    <td class="px-4 py-3">
-                        <div class="flex items-center">
-                            {% set primary_image = get_primary_image(product[0]) %}
-                            <img src="{{ url_for('static', filename='uploads/products/' + primary_image) if primary_image else 'https://via.placeholder.com/60' }}" 
-                                 alt="{{ product[2] }}" 
-                                 class="w-10 h-10 object-cover rounded-md mr-3">
-                            <div>
-                                <h3 class="font-semibold">{{ product[2] }}</h3>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-4 py-3">
-                        {% for category in categories %}
-                            {% if category[0] == product[1] %}
-                                {{ category[1] }}
-                            {% endif %}
-                        {% endfor %}
-                    </td>
-                    <td class="px-4 py-3">${{ "%.2f"|format(product[4]) }}</td>
-                    <td class="px-4 py-3">{{ product[5] }}</td>
-                    <td class="px-4 py-3">
-                        {% set image_count = get_image_count(product[0]) %}
-                        <span class="bg-gray-200 px-2 py-1 rounded-full text-xs">{{ image_count }} image(s)</span>
-                    </td>
-                    <td class="px-4 py-3">
-                        <div class="flex space-x-2">
-                            <a href="{{ url_for('admin_edit_product', product_id=product[0]) }}" class="text-blue-600 hover:text-blue-800">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <a href="{{ url_for('admin_delete_product', product_id=product[0]) }}" class="text-red-600 hover:text-red-800" onclick="return confirm('Are you sure you want to delete this product?')">
-                                <i class="fas fa-trash"></i>
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
+<!-- Update the table headers in products.html -->
+<thead>
+    <tr class="bg-gray-100">
+        <th class="px-4 py-3 text-left">Product</th>
+        <th class="px-4 py-3 text-left">Category</th>
+        <th class="px-4 py-3 text-left">Price</th>
+        <th class="px-4 py-3 text-left">Discount</th>
+        <th class="px-4 py-3 text-left">Final Price</th>
+        <th class="px-4 py-3 text-left">Stock</th>
+        <th class="px-4 py-3 text-left">Images</th>
+        <th class="px-4 py-3 text-left">Actions</th>
+    </tr>
+</thead>
+
+<!-- Update the product rows -->
+<tbody>
+    {% for product in products %}
+    <tr class="border-b border-gray-200">
+        <td class="px-4 py-3">
+            <div class="flex items-center">
+                {% set primary_image = get_primary_image(product[0]) %}
+                <img src="{{ url_for('static', filename='uploads/products/' + primary_image) if primary_image else 'https://via.placeholder.com/60' }}" 
+                     alt="{{ product[2] }}" 
+                     class="w-10 h-10 object-cover rounded-md mr-3">
+                <div>
+                    <h3 class="font-semibold">{{ product[2] }}</h3>
+                </div>
+            </div>
+        </td>
+        <td class="px-4 py-3">
+            {% for category in categories %}
+                {% if category[0] == product[1] %}
+                    {{ category[1] }}
+                {% endif %}
+            {% endfor %}
+        </td>
+        <td class="px-4 py-3">
+            {% set discount_info = get_discount_info(product) %}
+            {% if discount_info.has_discount %}
+                <span class="text-red-500 line-through text-sm">{{ format_currency(discount_info.original_price) }}</span><br>
+            {% endif %}
+            <span class="font-semibold">{{ format_currency(product[4]) }}</span>
+        </td>
+        <td class="px-4 py-3">
+            {% if discount_info.has_discount %}
+                <span class="bg-red-500 text-white px-2 py-1 rounded-full text-xs">
+                    -{{ discount_info.discount_percent }}%
+                </span>
+            {% else %}
+                <span class="text-gray-500">-</span>
+            {% endif %}
+        </td>
+        <td class="px-4 py-3 font-semibold">
+            {{ format_currency(discount_info.discounted_price) }}
+        </td>
+        <td class="px-4 py-3">{{ product[5] }}</td>
+        <td class="px-4 py-3">
+            {% set image_count = get_image_count(product[0]) %}
+            <span class="bg-gray-200 px-2 py-1 rounded-full text-xs">{{ image_count }} image(s)</span>
+        </td>
+        <td class="px-4 py-3">
+            <div class="flex space-x-2">
+                <a href="{{ url_for('admin_edit_product', product_id=product[0]) }}" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-edit"></i>
+                </a>
+                <a href="{{ url_for('admin_delete_product', product_id=product[0]) }}" class="text-red-600 hover:text-red-800" onclick="return confirm('Are you sure you want to delete this product?')">
+                    <i class="fas fa-trash"></i>
+                </a>
+            </div>
+        </td>
+    </tr>
+    {% endfor %}
+</tbody>
         </table>
     </div>
 </div>

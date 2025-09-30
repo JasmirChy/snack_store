@@ -36,25 +36,26 @@
                         </p>
 
                         <div class="flex flex-col items-center">
-                            <!-- QR code image -->
-                           <img id="paymentQr" src="{{ url_for('static', filename='uploads/payment_qr/' + qr_setting[1]) }}" alt="Payment QR Code">
-
-
-                            <!-- Download QR button -->
+                            <!-- QR code image - Fixed index to [2] -->
                             {% if qr_setting and qr_setting[2] %}
+                            <img id="paymentQr" src="{{ url_for('static', filename='uploads/payment_qr/' + qr_setting[2]) }}" alt="Payment QR Code" class="w-48 h-48 mb-4 border rounded-lg">
+                            
+                            <!-- Download QR button -->
                             <a href="{{ url_for('static', filename='uploads/payment_qr/' + qr_setting[2]) }}" 
                                download="payment_qr_{{ order[0] }}.png"
                                class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md mb-4 transition duration-300">
                                 Download QR
                             </a>
+                            {% else %}
+                            <p class="text-red-500 mb-4">QR code not available. Please contact admin.</p>
                             {% endif %}
 
                             <!-- Payment proof upload form -->
-                            {% if not order.payment_proof %}
+                            {% if not order[5] %}  <!-- payment_proof field -->
                             <form action="{{ url_for('upload_payment_proof', order_id=order[0]) }}" 
                                   method="POST" enctype="multipart/form-data" class="mt-2 w-full max-w-sm">
                                 <div class="flex flex-col items-center">
-                                    <input type="file" name="payment_proof" required
+                                    <input type="file" name="payment_proof" required accept="image/*,.pdf"
                                            class="mb-2 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-blue-700">
                                     <button type="submit" 
                                             class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md text-sm transition duration-300">
@@ -64,6 +65,7 @@
                             </form>
                             {% else %}
                             <p class="text-green-600 font-semibold mt-2">
+                                <i class="fas fa-check-circle mr-1"></i>
                                 Payment proof uploaded successfully!
                             </p>
                             {% endif %}
@@ -73,32 +75,163 @@
                 </div>
             </div>
             
+            <!-- Order Items with Discount Information -->
             <div class="mt-6">
-                <h3 class="font-semibold mb-2">Order Items</h3>
+                <h3 class="text-xl font-semibold mb-4">Order Items</h3>
                 {% for item in order_items %}
-                <div class="flex justify-between items-center mb-2">
-                    <div>{{ item[7] }} x {{ item[3] }}</div>
-                    <div>रु{{ "%.2f"|format(item[4] * item[3]) }}</div>
+                <div class="bg-white rounded-lg p-4 mb-3 border border-gray-200">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start mb-3">
+                                <h4 class="font-semibold text-lg">{{ item[7] }}</h4>
+                                <span class="text-gray-600 bg-gray-100 px-2 py-1 rounded text-sm">Qty: {{ item[3] }}</span>
+                            </div>
+                            
+                            <!-- Price Display - EXACTLY like index.html -->
+                            <div class="mb-4">
+                                {% set unit_price = item[4] %}
+                                {% set original_unit_price = item.original_unit_price if item.original_unit_price is defined else unit_price %}
+                                {% set has_discount = original_unit_price > unit_price %}
+                                {% set discount_percent = ((original_unit_price - unit_price) / original_unit_price * 100)|round(1) if has_discount else 0 %}
+                                
+                                {% if has_discount %}
+                                <!-- With Discount Display - Same as index.html -->
+                                <div class="space-y-3">
+                                    <!-- Price Row -->
+                                    <div class="flex items-center space-x-4">
+                                        <span class="text-2xl text-red-600 font-bold">{{ format_currency(unit_price * item[3]) }}</span>
+                                        <span class="text-lg text-gray-500 line-through">{{ format_currency(original_unit_price * item[3]) }}</span>
+                                    </div>
+                                    
+                                    <!-- Discount Badge and Savings -->
+                                    <div class="flex items-center space-x-3">
+                                        <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-bold border border-red-200">
+                                            {{ discount_percent|int }}% Discount
+                                        </span>
+                                        <span class="text-green-600 text-sm font-semibold bg-green-50 px-2 py-1 rounded">
+                                            You save {{ format_currency((original_unit_price - unit_price) * item[3]) }}
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- Effective Price -->
+                                    <div class="text-sm text-gray-600">
+                                        <i class="fas fa-tag text-red-500 mr-1"></i>
+                                        Effective price: <span class="font-semibold">{{ format_currency(unit_price) }}</span> per item
+                                        <span class="line-through text-gray-500 ml-2">{{ format_currency(original_unit_price) }}</span>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <!-- Without Discount Display -->
+                                <div class="space-y-2">
+                                    <span class="text-2xl text-primary font-bold">{{ format_currency(unit_price * item[3]) }}</span>
+                                    <div class="text-sm text-gray-500">
+                                        <i class="fas fa-tag text-gray-400 mr-1"></i>
+                                        Unit price: {{ format_currency(unit_price) }}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 {% endfor %}
                 
-                <div class="border-t border-gray-300 mt-4 pt-4 font-semibold flex justify-between">
-                    <span>Total:</span>
-                    <span>रु{{ "%.2f"|format(order[2]) }}</span>
+                <!-- Order Summary -->
+                <div class="border-t border-gray-300 mt-4 pt-4 space-y-2">
+                    {% set order_original_total = order.original_total if order.original_total is defined else order[2] %}
+                    {% set order_final_total = order[2] %}
+                    {% set order_had_discount = order_original_total > order_final_total %}
+                    {% set order_discount_percent = ((order_original_total - order_final_total) / order_original_total * 100)|round(1) if order_had_discount else 0 %}
+                    
+                    {% if order_had_discount %}
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-green-600">
+                            <span class="font-semibold">Total Savings:</span>
+                            <span class="font-semibold">-{{ format_currency(order_original_total - order_final_total) }}</span>
+                        </div>
+                        <div class="flex justify-between text-gray-600 text-sm">
+                            <span>Original Total:</span>
+                            <span class="line-through">{{ format_currency(order_original_total) }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex justify-between font-semibold text-xl border-t border-gray-200 pt-2">
+                        <span>Grand Total:</span>
+                        <span class="text-primary">{{ format_currency(order[2]) }}</span>
+                    </div>
+                    
+                    {% if order_had_discount %}
+                    <div class="text-center text-green-600 font-semibold text-sm bg-green-50 py-2 rounded mt-2">
+                        <i class="fas fa-trophy mr-1"></i>
+                        You saved {{ order_discount_percent }}% on this order!
+                    </div>
+                    {% endif %}
                 </div>
+            </div>
+
+            <!-- Order Status Information -->
+            <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                <h3 class="font-semibold text-blue-800 mb-2 flex items-center">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Order Status
+                </h3>
+                <p class="text-blue-700">
+                    Current Status: <span class="font-semibold capitalize bg-blue-100 px-2 py-1 rounded">{{ order[6] if order[6] else 'pending' }}</span>
+                </p>
+                <p class="text-sm text-blue-600 mt-1">
+                    You will receive email updates as your order progresses. Track your order from your order history.
+                </p>
             </div>
         </div>
         
         <div class="flex flex-col sm:flex-row justify-center gap-4">
-            <a href="{{ url_for('orders') }}" 
-               class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-6 rounded-md transition duration-300">
+            <a href="{{ url_for('user_orders') }}" 
+               class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-6 rounded-md transition duration-300 flex items-center justify-center">
+                <i class="fas fa-history mr-2"></i>
                 View Order History
             </a>
             <a href="{{ url_for('products') }}" 
-               class="bg-primary hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md transition duration-300">
+               class="bg-primary hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md transition duration-300 flex items-center justify-center">
+                <i class="fas fa-shopping-bag mr-2"></i>
                 Continue Shopping
             </a>
         </div>
+
+        <!-- Support Information -->
+        <div class="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <h3 class="font-semibold text-yellow-800 mb-2 flex items-center">
+                <i class="fas fa-question-circle mr-2"></i>
+                Need Help?
+            </h3>
+            <p class="text-yellow-700 text-sm">
+                If you have any questions about your order, please contact our support team at 
+                <strong>info.swadgalli@gmail.com</strong> or call us at <strong>+977-9703931744</strong>.
+                Include your order number <strong>#{{ order[0] }}</strong> in your communication.
+            </p>
+        </div>
     </div>
 </div>
+
+<style>
+.line-through {
+    text-decoration: line-through;
+}
+
+.bg-red-100 {
+    background-color: #fee2e2;
+}
+
+.bg-blue-100 {
+    background-color: #dbeafe;
+}
+
+.bg-green-100 {
+    background-color: #dcfce7;
+}
+
+.bg-yellow-50 {
+    background-color: #fefce8;
+}
+</style>
 {% endblock %}

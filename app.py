@@ -51,6 +51,8 @@ def send_customer_order_placed_email(to_email, customer_name, order_id, product_
     products_list = ", ".join(product_names)
 
     body = f"""
+    SwadGaLLi 
+
     Hello {customer_name},
 
     Your order (Order ID: {order_id}) has been placed successfully.
@@ -159,6 +161,80 @@ def get_cart_count():
         return count
     return 0
 
+# for discount finctionality
+def has_discount(product):
+    """Check if product has active discount"""
+    try:
+        # Common structure: id, category_id, title, description, price, stock, image, discount_percent, original_price, created_at
+        if len(product) > 7 and product[7] is not None:
+            discount_percent = float(product[7])
+            return discount_percent > 0
+        return False
+    except (TypeError, ValueError, IndexError):
+        return False
+
+def get_discount_info(product):
+    """Get discount information for product"""
+    try:
+        # Handle different product structures
+        if len(product) >= 9:
+            # New structure with explicit fields (admin_products route)
+            discount_percent = product[7] if product[7] is not None else 0
+            current_price = float(product[4]) if product[4] is not None else 0.0
+            
+            if discount_percent and float(discount_percent) > 0:
+                discount_percent_float = float(discount_percent)
+                
+                # Use original_price if available, otherwise use current price
+                if len(product) > 8 and product[8] is not None:
+                    original_price = float(product[8])
+                else:
+                    original_price = current_price
+                
+                discounted_price = calculate_discounted_price(original_price, discount_percent_float)
+                
+                return {
+                    'has_discount': True,
+                    'discount_percent': discount_percent_float,
+                    'original_price': original_price,
+                    'discounted_price': discounted_price,
+                    'you_save': original_price - discounted_price
+                }
+        
+        # Fallback for no discount or older structure
+        current_price = float(product[4]) if len(product) > 4 and product[4] is not None else 0.0
+        return {
+            'has_discount': False,
+            'discount_percent': 0,
+            'original_price': current_price,
+            'discounted_price': current_price,
+            'you_save': 0
+        }
+            
+    except (TypeError, ValueError, IndexError) as e:
+        print(f"Error in get_discount_info: {e}")
+        # Ultimate fallback
+        current_price = float(product[4]) if len(product) > 4 and product[4] is not None else 0.0
+        return {
+            'has_discount': False,
+            'discount_percent': 0,
+            'original_price': current_price,
+            'discounted_price': current_price,
+            'you_save': 0
+        }
+def calculate_discounted_price(original_price, discount_percent):
+    """Calculate discounted price from original price and discount percentage"""
+    try:
+        original = float(original_price)
+        discount = float(discount_percent)
+        
+        if discount > 0:
+            discount_amount = original * (discount / 100)
+            return max(0, original - discount_amount)
+        return original
+    except (TypeError, ValueError):
+        return float(original_price)
+# Update the format_currency function to handle discount display
 def format_currency(amount):
     """Format amount as Nepali currency"""
     try:
@@ -167,6 +243,25 @@ def format_currency(amount):
         return "रु {:,.2f}".format(amount) if amount else "रु 0.00"
     except (ValueError, TypeError):
         return "रु 0.00"
+
+# Update the context processor
+@app.context_processor
+def inject_global_data():
+    cart_count = 0
+    if current_user.is_authenticated and not current_user.is_admin:
+        cart_count = get_cart_count()
+    
+    return dict(
+        categories=get_categories(),
+        cart_count=cart_count,
+        format_currency=format_currency,
+        format_date=format_date_filter,
+        get_primary_image=get_primary_image,
+        get_image_count=get_image_count,
+        calculate_discounted_price=calculate_discounted_price,
+        has_discount=has_discount,
+        get_discount_info=get_discount_info
+    )
 
 @app.template_filter('format_date')
 def format_date_filter(date_value, format_string='%B %d, %Y at %H:%M'):
@@ -356,7 +451,6 @@ def admin_delete_slider(item_id):
 
 # Routes
 
-
 @app.route('/')
 def index():
     cur = mysql.connection.cursor()
@@ -369,8 +463,24 @@ def index():
     cur.execute("SELECT * FROM slider_items ORDER BY created_at DESC")
     slider_items = cur.fetchall()
     
-    # Get products
-    cur.execute("SELECT * FROM products WHERE stock > 0 ORDER BY created_at DESC LIMIT 8")
+    # Get products WITH DISCOUNT FIELDS - explicitly select all fields including discount columns
+    cur.execute("""
+        SELECT 
+            id, 
+            category_id, 
+            title, 
+            description, 
+            price, 
+            stock, 
+            image, 
+            discount_percent, 
+            original_price, 
+            created_at 
+        FROM products 
+        WHERE stock > 0 
+        ORDER BY created_at DESC 
+        LIMIT 8
+    """)
     products = cur.fetchall()
     
     # 🔥 Get reviews (important!)
@@ -386,7 +496,6 @@ def index():
         products=products,
         reviews=reviews   # 👈 pass reviews to template
     )
-
 # View all reviews
 @app.route('/admin/reviews')
 @login_required
@@ -463,6 +572,8 @@ def admin_delete_review(review_id):
     flash("Review deleted successfully", "info")
     return redirect(url_for('admin_reviews'))
 
+
+
 @app.route('/products')
 def products():
     if current_user.is_authenticated and current_user.is_admin:
@@ -473,9 +584,37 @@ def products():
     cur = mysql.connection.cursor()
     
     if category_id:
-        cur.execute("SELECT * FROM products WHERE category_id = %s AND stock > 0", (category_id,))
+        cur.execute("""
+            SELECT 
+                id, 
+                category_id, 
+                title, 
+                description, 
+                price, 
+                stock, 
+                image, 
+                discount_percent, 
+                original_price, 
+                created_at 
+            FROM products 
+            WHERE category_id = %s AND stock > 0
+        """, (category_id,))
     else:
-        cur.execute("SELECT * FROM products WHERE stock > 0")
+        cur.execute("""
+            SELECT 
+                id, 
+                category_id, 
+                title, 
+                description, 
+                price, 
+                stock, 
+                image, 
+                discount_percent, 
+                original_price, 
+                created_at 
+            FROM products 
+            WHERE stock > 0
+        """)
     
     products = cur.fetchall()
     cur.close()
@@ -489,11 +628,29 @@ def product_detail(product_id):
         return redirect(url_for('admin_dashboard'))
     
     cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM products WHERE id = %s", (product_id,))
+    
+    # Get product with explicit field selection including discount fields
+    cur.execute("""
+        SELECT 
+            id, 
+            category_id, 
+            title, 
+            description, 
+            price, 
+            stock, 
+            image, 
+            discount_percent, 
+            original_price, 
+            created_at 
+        FROM products 
+        WHERE id = %s
+    """, (product_id,))
+    
     product = cur.fetchone()
     
     if not product:
         flash('Product not found', 'error')
+        cur.close()
         return redirect(url_for('products'))
     
     # Get all images for this product
@@ -503,8 +660,6 @@ def product_detail(product_id):
     cur.close()
     
     return render_template('products/detail.html', product=product, product_images=product_images)
-
-
 
 # Add a helper function to get primary image
 def get_primary_image(product_id):
@@ -566,6 +721,8 @@ def add_to_cart():
     flash('Product added to cart', 'success')
     return redirect(request.referrer)
 
+
+
 @app.route('/cart')
 @login_required
 def cart():
@@ -575,18 +732,76 @@ def cart():
     
     cur = mysql.connection.cursor()
     cur.execute("""
-        SELECT ci.id, p.id, p.title, p.price, p.image, ci.quantity, (p.price * ci.quantity) as total
+        SELECT ci.id, p.id, p.title, p.price, p.discount_percent, p.original_price, p.image, ci.quantity
         FROM cart_items ci
         JOIN products p ON ci.product_id = p.id
         WHERE ci.user_id = %s
     """, (current_user.id,))
     
-    cart_items = cur.fetchall()
-    grand_total = sum(item[6] for item in cart_items)
+    cart_items_data = cur.fetchall()
+    cart_items = []
+    grand_total = 0
+    total_savings = 0
+    has_discounted_items = False
+    
+    for item in cart_items_data:
+        # Extract product data
+        cart_item_id = item[0]
+        product_id = item[1]
+        title = item[2]
+        price = item[3]
+        discount_percent = item[4] if item[4] else 0
+        original_price = item[5]
+        image = item[6]
+        quantity = item[7]
+        
+        # Calculate discount information
+        discount_info = get_discount_info({
+            0: product_id,
+            1: None,  # category_id not needed
+            2: title,
+            3: None,  # description not needed
+            4: price,
+            5: None,  # stock not needed
+            6: image,
+            7: discount_percent,
+            8: original_price
+        })
+        
+        # Calculate item totals
+        item_total_original = price * quantity
+        item_total_discounted = discount_info['discounted_price'] * quantity
+        item_savings = discount_info['you_save'] * quantity
+        
+        # Prepare cart item data
+        cart_item = {
+            'id': cart_item_id,
+            'product_id': product_id,
+            'title': title,
+            'price': price,
+            'image': image,
+            'quantity': quantity,
+            'discount_info': discount_info,
+            'item_total_original': item_total_original,
+            'item_total_discounted': item_total_discounted,
+            'item_savings': item_savings,
+            'display_price': discount_info['discounted_price'] if discount_info['has_discount'] else price
+        }
+        
+        cart_items.append(cart_item)
+        grand_total += item_total_discounted
+        total_savings += item_savings
+        
+        if discount_info['has_discount']:
+            has_discounted_items = True
     
     cur.close()
     
-    return render_template('cart/index.html', cart_items=cart_items, grand_total=grand_total)
+    return render_template('cart/index.html', 
+                         cart_items=cart_items, 
+                         grand_total=grand_total,
+                         total_savings=total_savings,
+                         has_discounted_items=has_discounted_items)
 
 @app.route('/update_cart', methods=['POST'])
 @login_required
@@ -710,7 +925,7 @@ def checkout():
 
     # Fetch QR setting (tuple: id, key_name, value)
     cur.execute("SELECT * FROM settings WHERE key_name='payment_qr'")
-    qr_setting = cur.fetchone()  # qr_setting[2] will be the QR filename
+    qr_setting = cur.fetchone()
 
     if request.method == 'POST':
         name = request.form.get('name')
@@ -729,30 +944,75 @@ def checkout():
 
         address = f"{name}\n{street}\n{city}, {postal_code}\n{country}\nPhone: {phone}"
 
-        # Fetch cart items
+        # Fetch cart items with discount information
         cur.execute("""
-            SELECT p.id, p.price, ci.quantity, (p.price * ci.quantity) as total
+            SELECT p.id, p.title, p.price, p.discount_percent, p.original_price, ci.quantity
             FROM cart_items ci
             JOIN products p ON ci.product_id = p.id
             WHERE ci.user_id = %s
         """, (current_user.id,))
-        cart_items = cur.fetchall()
+        cart_items_data = cur.fetchall()
 
-        if not cart_items:
+        if not cart_items_data:
             flash('Your cart is empty', 'error')
             return redirect(url_for('cart'))
 
-        total_amount = sum(item[3] for item in cart_items)
+        # Calculate totals with discount consideration
+        total_amount = 0.0
+        total_original_amount = 0.0
+        total_savings = 0.0
+        order_items_data = []
+
+        for item in cart_items_data:
+            product_id, title, price, discount_percent, original_price, quantity = item
+            
+            # Convert all values to float to ensure consistent types
+            price_float = float(price) if price is not None else 0.0
+            discount_percent_float = float(discount_percent) if discount_percent is not None else 0.0
+            original_price_float = float(original_price) if original_price is not None else price_float
+            quantity_int = int(quantity)
+            
+            # Calculate the correct prices
+            if discount_percent_float > 0:
+                # If we have a discount, use original_price as the base
+                actual_original_price = original_price_float
+                actual_discounted_price = calculate_discounted_price(actual_original_price, discount_percent_float)
+            else:
+                # No discount, both prices are the same
+                actual_original_price = price_float
+                actual_discounted_price = price_float
+            
+            item_total = actual_discounted_price * quantity_int
+            item_original_total = actual_original_price * quantity_int
+            item_savings = float(item_original_total - item_total)
+            
+            total_amount += item_total
+            total_original_amount += item_original_total
+            total_savings += item_savings
+            
+            order_items_data.append({
+                'product_id': product_id,
+                'quantity': quantity_int,
+                'unit_price': actual_discounted_price,
+                'original_unit_price': actual_original_price,
+                'discount_percent': discount_percent_float,
+                'item_total': item_total,
+                'item_original_total': item_original_total,
+                'item_savings': item_savings
+            })
 
         # Check stock
-        for item in cart_items:
-            cur.execute("SELECT stock FROM products WHERE id = %s", (item[0],))
-            stock = cur.fetchone()[0]
-            if stock < item[2]:
-                flash(f'Not enough stock for product ID {item[0]}', 'error')
+        for item in cart_items_data:
+            product_id, _, _, _, _, quantity = item
+            cur.execute("SELECT stock FROM products WHERE id = %s", (product_id,))
+            stock_result = cur.fetchone()
+            stock_quantity = stock_result[0] if stock_result else 0
+            if stock_quantity < int(quantity):
+                flash(f'Not enough stock for one or more products', 'error')
+                cur.close()
                 return redirect(url_for('cart'))
 
-        # Insert order
+        # Insert order with discount information
         cur.execute("""
             INSERT INTO orders (user_id, total_amount, address, payment_method, status, payment_proof)
             VALUES (%s, %s, %s, %s, 'pending', %s)
@@ -766,58 +1026,126 @@ def checkout():
         order_id = cur.lastrowid
         mysql.connection.commit()
 
-# ✅ Fetch product names for email
-        product_ids = [item[0] for item in cart_items]
-        cur.execute(
-            "SELECT title FROM products WHERE id IN (%s)" % ",".join(["%s"]*len(product_ids)),
-            product_ids
-        )
-        product_names = [row[0] for row in cur.fetchall()]
+        # Fetch product names for email
+        product_ids = [item[0] for item in cart_items_data]
+        if product_ids:
+            cur.execute(
+                "SELECT title FROM products WHERE id IN (%s)" % ",".join(["%s"]*len(product_ids)),
+                product_ids
+            )
+            product_names = [row[0] for row in cur.fetchall()]
+        else:
+            product_names = []
         
-        # ✅ Send order placed email to customer
+        # Send order placed email to customer
         send_customer_order_placed_email(
             to_email=current_user.email,
             customer_name=current_user.name,
             order_id=order_id,
-            product_names=product_names
+            product_names=product_names,
+            total_amount=total_amount,
+            total_savings=total_savings if total_savings > 0 else None
         )
         
         # Save uploaded proof if online payment
         if payment_method == 'online' and payment_proof:
-            proof_path = os.path.join('static/uploads/payment_proofs', payment_proof.filename)
+            filename = secure_filename(f"{uuid.uuid4().hex}_{payment_proof.filename}")
+            proof_path = os.path.join(app.config['UPLOAD_FOLDER'], 'payment_proofs', filename)
+            os.makedirs(os.path.dirname(proof_path), exist_ok=True)
             payment_proof.save(proof_path)
+            
+            # Update order with the saved filename
+            cur.execute("UPDATE orders SET payment_proof = %s WHERE id = %s", (filename, order_id))
+            mysql.connection.commit()
 
         # Notify admin
         send_admin_notification()
 
-        # Insert order items and update stock
-        for item in cart_items:
+        # Insert order items with discounted prices and update stock
+        for item_data in order_items_data:
             cur.execute("""
                 INSERT INTO order_items (order_id, product_id, quantity, unit_price)
                 VALUES (%s, %s, %s, %s)
-            """, (order_id, item[0], item[2], item[1]))
-            cur.execute("UPDATE products SET stock = stock - %s WHERE id = %s", (item[2], item[0]))
+            """, (order_id, item_data['product_id'], item_data['quantity'], item_data['unit_price']))
+            
+            cur.execute("UPDATE products SET stock = stock - %s WHERE id = %s", 
+                       (item_data['quantity'], item_data['product_id']))
 
         # Delete cart items
         cur.execute("DELETE FROM cart_items WHERE user_id = %s", (current_user.id,))
         mysql.connection.commit()
         cur.close()
 
-        flash('Order placed successfully!', 'success')
+        flash('Order placed successfully!' + (f' You saved {format_currency(total_savings)}!' if total_savings > 0 else ''), 'success')
         return redirect(url_for('order_confirmation', order_id=order_id))
 
     # GET method: display checkout page
     cur.execute("""
-        SELECT ci.id, p.id, p.title, p.price, p.image, ci.quantity, (p.price * ci.quantity) as total
+        SELECT ci.id, p.id, p.title, p.price, p.discount_percent, p.original_price, p.image, ci.quantity
         FROM cart_items ci
         JOIN products p ON ci.product_id = p.id
         WHERE ci.user_id = %s
     """, (current_user.id,))
-    cart_items = cur.fetchall()
-    grand_total = sum(item[6] for item in cart_items)
+    
+    cart_items_data = cur.fetchall()
+    cart_items = []
+    grand_total = 0.0
+    total_savings = 0.0
+    has_discounted_items = False
+
+    for item in cart_items_data:
+        cart_item_id, product_id, title, price, discount_percent, original_price, image, quantity = item
+        
+        # Convert to proper types
+        price_float = float(price) if price is not None else 0.0
+        discount_percent_float = float(discount_percent) if discount_percent is not None else 0.0
+        original_price_float = float(original_price) if original_price is not None else price_float
+        quantity_int = int(quantity)
+        
+        # Calculate the correct prices for display
+        if discount_percent_float > 0:
+            # Use original_price as the base for calculation
+            display_original_price = original_price_float
+            display_discounted_price = calculate_discounted_price(display_original_price, discount_percent_float)
+        else:
+            # No discount, both prices are the same
+            display_original_price = price_float
+            display_discounted_price = price_float
+        
+        item_total_original = display_original_price * quantity_int
+        item_total_discounted = display_discounted_price * quantity_int
+        item_savings = item_total_original - item_total_discounted
+        
+        cart_item = {
+            'id': cart_item_id,
+            'product_id': product_id,
+            'title': title,
+            'price': price_float,
+            'image': image,
+            'quantity': quantity_int,
+            'discount_info': {
+                'has_discount': discount_percent_float > 0,
+                'discount_percent': discount_percent_float,
+                'original_price': display_original_price,
+                'discounted_price': display_discounted_price,
+                'you_save': display_original_price - display_discounted_price
+            },
+            'item_total_original': item_total_original,
+            'item_total_discounted': item_total_discounted,
+            'item_savings': item_savings,
+            'display_price': display_discounted_price
+        }
+        
+        cart_items.append(cart_item)
+        grand_total += item_total_discounted
+        total_savings += item_savings
+        
+        if discount_percent_float > 0:
+            has_discounted_items = True
 
     if not cart_items:
         flash('Your cart is empty', 'error')
+        cur.close()
         return redirect(url_for('cart'))
 
     cur.close()
@@ -826,8 +1154,48 @@ def checkout():
         'cart/checkout.html',
         cart_items=cart_items,
         grand_total=grand_total,
-        qr_setting=qr_setting  # Pass the tuple to template
+        total_savings=total_savings,
+        has_discounted_items=has_discounted_items,
+        qr_setting=qr_setting
     )
+def send_customer_order_placed_email(to_email, customer_name, order_id, product_names, total_amount, total_savings=None):
+    sender_email = "info.swadgalli@gmail.com"
+    sender_password = "chfy qktf tnuz esgl"  # Gmail app password
+
+    subject = f"Your Order #{order_id} has been placed successfully!"
+    products_list = ", ".join(product_names)
+
+    body = f"""
+    Hello {customer_name},
+
+    Your order (Order ID: {order_id}) has been placed successfully.
+
+    Products in your order: {products_list}
+
+    Total Amount: रु {total_amount:,.2f}
+    """
+
+    if total_savings and total_savings > 0:
+        body += f"You saved: रु {total_savings:,.2f}\n\n"
+
+    body += """
+    Thank you for shopping with SwadGaLLi!
+    """
+
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, to_email, msg.as_string())
+            print(f"Order placed email sent to {to_email}")
+    except Exception as e:
+        print(f"Failed to send order placed email: {e}")
 
 @app.route('/order_confirmation/<int:order_id>')
 @login_required
@@ -1176,6 +1544,8 @@ def admin_dashboard():
                          recent_orders=recent_orders,
                          active_banner=active_banner)
 
+
+
 @app.route('/buy_now', methods=['POST'])
 @login_required
 def buy_now():
@@ -1194,6 +1564,7 @@ def buy_now():
         flash('Product not available in the requested quantity', 'error')
         return redirect(request.referrer)
     
+    # Clear existing cart items and add this single product
     cur.execute("DELETE FROM cart_items WHERE user_id = %s", (current_user.id,))
     cur.execute("INSERT INTO cart_items (user_id, product_id, quantity) VALUES (%s, %s, %s)", 
                (current_user.id, product_id, quantity))
@@ -1201,7 +1572,9 @@ def buy_now():
     mysql.connection.commit()
     cur.close()
     
-    return redirect(url_for('checkout'))
+    return redirect(url_for('checkout'))  # Make sure this matches your checkout route name
+
+
 
 @app.route('/admin/products')
 @login_required
@@ -1211,13 +1584,22 @@ def admin_products():
         return redirect(url_for('index'))
     
     cur = mysql.connection.cursor()
-    cur.execute("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id ORDER BY p.created_at DESC")
+    
+    # Use explicit field selection to ensure consistent indices
+    cur.execute("""
+        SELECT 
+            p.id, p.category_id, p.title, p.description, p.price, p.stock, p.image,
+            p.discount_percent, p.original_price, p.created_at,
+            c.name as category_name
+        FROM products p 
+        LEFT JOIN categories c ON p.category_id = c.id 
+        ORDER BY p.created_at DESC
+    """)
     products = cur.fetchall()
     cur.close()
     
     return render_template('admin/products.html', products=products)
 
-# Update the admin_add_product function
 @app.route('/admin/products/add', methods=['GET', 'POST'])
 @login_required
 def admin_add_product():
@@ -1231,12 +1613,33 @@ def admin_add_product():
         price = float(request.form.get('price'))
         stock = int(request.form.get('stock'))
         category_id = request.form.get('category_id')
+        discount_percent = float(request.form.get('discount_percent', 0))
+        original_price_str = request.form.get('original_price')
+        
+        # Handle discount logic
+        original_price = None
+        if discount_percent > 0:
+            if original_price_str and original_price_str.strip():
+                original_price = float(original_price_str)
+            else:
+                # If discount is set but no original price provided, use current price as original
+                original_price = price
+        
+        # Validate discount percentage
+        if discount_percent < 0 or discount_percent > 100:
+            flash('Discount percentage must be between 0 and 100', 'error')
+            return redirect(url_for('admin_add_product'))
+        
+        # Validate original price if provided
+        if original_price and original_price <= 0:
+            flash('Original price must be greater than 0', 'error')
+            return redirect(url_for('admin_add_product'))
         
         cur = mysql.connection.cursor()
         cur.execute("""
-            INSERT INTO products (title, description, price, stock, category_id)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (title, description, price, stock, category_id))
+            INSERT INTO products (title, description, price, stock, category_id, discount_percent, original_price)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (title, description, price, stock, category_id, discount_percent, original_price))
         
         product_id = cur.lastrowid
         
@@ -1271,7 +1674,7 @@ def admin_add_product():
     categories = get_categories()
     return render_template('admin/product_form.html', categories=categories)
 
-# Update the admin_edit_product function
+    
 @app.route('/admin/products/edit/<int:product_id>', methods=['GET', 'POST'])
 @login_required
 def admin_edit_product(product_id):
@@ -1287,12 +1690,44 @@ def admin_edit_product(product_id):
         price = float(request.form.get('price'))
         stock = int(request.form.get('stock'))
         category_id = request.form.get('category_id')
+        discount_percent = float(request.form.get('discount_percent', 0))
+        original_price_str = request.form.get('original_price')
+        
+        # Handle discount logic
+        original_price = None
+        if discount_percent > 0:
+            if original_price_str and original_price_str.strip():
+                original_price = float(original_price_str)
+            else:
+                # If discount is set but no original price provided, use current price as original
+                original_price = price
+        else:
+            # If discount is 0, clear the original price
+            original_price = None
+        
+        # Validate discount percentage
+        if discount_percent < 0 or discount_percent > 100:
+            flash('Discount percentage must be between 0 and 100', 'error')
+            return redirect(url_for('admin_edit_product', product_id=product_id))
+        
+        # Validate original price if provided
+        if original_price and original_price <= 0:
+            flash('Original price must be greater than 0', 'error')
+            return redirect(url_for('admin_edit_product', product_id=product_id))
+        
+        # Check if discount makes sense (discounted price should be lower than original)
+        if original_price and discount_percent > 0:
+            discounted_price = calculate_discounted_price(original_price, discount_percent)
+            if discounted_price >= original_price:
+                flash('Discounted price should be lower than original price', 'error')
+                return redirect(url_for('admin_edit_product', product_id=product_id))
         
         cur.execute("""
             UPDATE products 
-            SET title = %s, description = %s, price = %s, stock = %s, category_id = %s
+            SET title = %s, description = %s, price = %s, stock = %s, category_id = %s, 
+                discount_percent = %s, original_price = %s
             WHERE id = %s
-        """, (title, description, price, stock, category_id, product_id))
+        """, (title, description, price, stock, category_id, discount_percent, original_price, product_id))
         
         # Handle additional image uploads
         if 'images' in request.files:
@@ -1316,8 +1751,13 @@ def admin_edit_product(product_id):
         flash('Product updated successfully', 'success')
         return redirect(url_for('admin_products'))
     
+    # GET request - fetch product data
     cur.execute("SELECT * FROM products WHERE id = %s", (product_id,))
     product = cur.fetchone()
+    
+    if not product:
+        flash('Product not found', 'error')
+        return redirect(url_for('admin_products'))
     
     # Get all images for this product
     cur.execute("SELECT * FROM product_images WHERE product_id = %s ORDER BY is_primary DESC, created_at ASC", (product_id,))
@@ -1327,7 +1767,6 @@ def admin_edit_product(product_id):
     cur.close()
     
     return render_template('admin/product_form.html', product=product, categories=categories, product_images=product_images)
-
 @app.route('/admin/products/delete/<int:product_id>')
 @login_required
 def admin_delete_product(product_id):

@@ -31,6 +31,15 @@ CREATE TABLE products (
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
 );
 
+-- Add discount columns to products table
+ALTER TABLE products 
+ADD COLUMN discount_percent DECIMAL(5,2) DEFAULT 0.00,
+ADD COLUMN original_price DECIMAL(10,2) DEFAULT NULL;
+
+-- migration_discount.sql
+UPDATE products 
+SET original_price = price 
+WHERE discount_percent > 0 AND original_price IS NULL;
 -- Cart items table
 CREATE TABLE cart_items (
     id INT AUTO_INCREMENT PRIMARY KEY,

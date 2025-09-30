@@ -8,7 +8,15 @@
             <!-- Product Images Section -->
             <div class="md:w-1/2">
                 <!-- Main Image -->
-                <div class="mb-4">
+                <div class="mb-4 relative">
+                    {% set discount_info = get_discount_info(product) %}
+                    {% if discount_info.has_discount %}
+                    <div class="absolute top-4 left-4 z-10">
+                        <span class="bg-red-500 text-white px-4 py-2 rounded-full text-lg font-bold shadow-lg">
+                            -{{ discount_info.discount_percent|int }}% OFF
+                        </span>
+                    </div>
+                    {% endif %}
                     <img id="mainImage" 
                          src="{{ url_for('static', filename='uploads/products/' + (product_images[0][2] if product_images else 'default-product.jpg')) }}" 
                          alt="{{ product[2] }}" 
@@ -21,7 +29,7 @@
                     {% for image in product_images %}
                     <img src="{{ url_for('static', filename='uploads/products/' + image[2]) }}" 
                          alt="{{ product[2] }} - Image {{ loop.index }}"
-                         class="w-full h-20 object-cover cursor-pointer border-2 {% if loop.first %}border-primary{% else %}border-transparent{% endif %} rounded-md hover:border-primary transition-all duration-200"
+                         class="w-full h-20 object-cover cursor-pointer border-2 {% if loop.first %}border-primary{% else %}border-transparent{% endif %} rounded-md hover:border-primary transition-all duration-200 thumbnail"
                          onclick="changeMainImage('{{ url_for('static', filename='uploads/products/' + image[2]) }}', this)">
                     {% endfor %}
                 </div>
@@ -31,53 +39,128 @@
             <!-- Product Info -->
             <div class="md:w-1/2 p-6">
                 <h1 class="text-3xl font-bold mb-4">{{ product[2] }}</h1>
-                <p class="text-primary font-bold text-2xl mb-4">{{ format_currency(product[4]) }}</p>
+                
+                <!-- Price Display with Discount -->
+                <div class="mb-6">
+                    {% if discount_info.has_discount %}
+                    <div class="space-y-3">
+                        <!-- Discounted Price -->
+                        <div class="flex items-center space-x-4">
+                            <span class="text-3xl text-red-600 font-bold">
+                                {{ format_currency(discount_info.discounted_price) }}
+                            </span>
+                            <!-- Original Price -->
+                            <span class="text-xl text-gray-500 line-through">
+                                {{ format_currency(discount_info.original_price) }}
+                            </span>
+                        </div>
+                        
+                        <!-- Discount Badge and Savings -->
+                        <div class="flex items-center space-x-3">
+                            <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-bold border border-red-200">
+                                {{ discount_info.discount_percent|int }}% Discount
+                            </span>
+                            <span class="text-green-600 text-sm font-semibold bg-green-50 px-2 py-1 rounded">
+                                You save {{ format_currency(discount_info.you_save) }}
+                            </span>
+                        </div>
+                        
+                        <!-- Effective Discount Rate -->
+                        <div class="text-sm text-gray-600">
+                            <i class="fas fa-tag text-red-500 mr-1"></i>
+                            Effective price: <span class="font-semibold">{{ format_currency(discount_info.discounted_price) }}</span>
+                            per item
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Regular Price without Discount -->
+                    <div class="space-y-2">
+                        <span class="text-3xl text-primary font-bold">
+                            {{ format_currency(product[4]) }}
+                        </span>
+                        <div class="text-sm text-gray-500">
+                            <i class="fas fa-tag text-gray-400 mr-1"></i>
+                            Standard pricing
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
 
                 <!-- Availability -->
                 <div class="mb-6">
-                    <span class="text-gray-700">Availability:</span>
+                    <span class="text-gray-700 font-semibold">Availability:</span>
                     {% if product[5] > 0 %}
-                        <span class="text-green-600 font-semibold">In Stock ({{ product[5] }} available)</span>
+                        <span class="text-green-600 font-semibold ml-2">In Stock ({{ product[5] }} available)</span>
                     {% else %}
-                        <span class="text-red-600 font-semibold">Out of Stock</span>
+                        <span class="text-red-600 font-semibold ml-2">Out of Stock</span>
                     {% endif %}
                 </div>
 
                 <!-- Quantity & Actions -->
                 {% if product[5] > 0 %}
                 <div class="mb-6">
-                    <label for="quantity" class="block text-gray-700 mb-2">Quantity:</label>
+                    <label for="quantity" class="block text-gray-700 mb-2 font-semibold">Quantity:</label>
                     <div class="flex items-center space-x-2">
                         <button type="button" onclick="changeQuantity(-1)" 
-                                class="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300">-</button>
+                                class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition duration-200 font-bold text-lg">
+                            -
+                        </button>
                         
                         <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ product[5] }}" 
-                               class="w-20 px-3 py-2 border border-gray-300 text-center focus:outline-none focus:ring-2 focus:ring-primary font-semibold">
+                               class="w-20 px-3 py-2 border border-gray-300 text-center focus:outline-none focus:ring-2 focus:ring-primary font-semibold rounded-lg">
                         
                         <button type="button" onclick="changeQuantity(1)" 
-                                class="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300">+</button>
+                                class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition duration-200 font-bold text-lg">
+                            +
+                        </button>
                     </div>
-                    <p class="text-sm text-gray-500 mt-1">Max: {{ product[5] }} available</p>
+                    <p class="text-sm text-gray-500 mt-2">
+                        <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                        Maximum: {{ product[5] }} units available
+                    </p>
+                    
+                    <!-- Total Price Calculation -->
+                    <div class="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700 font-semibold">Total:</span>
+                            <span id="totalPrice" class="text-xl font-bold text-primary">
+                                {% if discount_info.has_discount %}
+                                    {{ format_currency(discount_info.discounted_price) }}
+                                {% else %}
+                                    {{ format_currency(product[4]) }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% if discount_info.has_discount %}
+                        <div class="text-sm text-green-600 mt-1 text-right">
+                            <i class="fas fa-piggy-bank mr-1"></i>
+                            Save up to {{ format_currency(discount_info.you_save * product[5]) }} on bulk purchase
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
 
+                <!-- Action Buttons -->
                 <div class="flex space-x-4">
                     <!-- Add to Cart Form -->
-                    <form action="{{ url_for('add_to_cart') }}" method="POST" class="inline">
+                    <form action="{{ url_for('add_to_cart') }}" method="POST" class="inline flex-1">
                         <input type="hidden" name="product_id" value="{{ product[0] }}">
                         <input type="hidden" name="quantity" value="1" id="cartQuantity">
                         <button type="button" onclick="updateCartQuantity()" 
-                                class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition duration-300">
-                            Add to Cart
+                                class="w-full bg-primary hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 flex items-center justify-center space-x-2">
+                            <i class="fas fa-cart-plus"></i>
+                            <span>Add to Cart</span>
                         </button>
                     </form>
                     
                     <!-- Buy Now Form -->
-                    <form action="{{ url_for('buy_now') }}" method="POST" class="inline">
+                    <form action="{{ url_for('buy_now') }}" method="POST" class="inline flex-1">
                         <input type="hidden" name="product_id" value="{{ product[0] }}">
                         <input type="hidden" name="quantity" value="1" id="buyNowQuantity">
                         <button type="button" onclick="updateBuyNowQuantity()" 
-                                class="bg-secondary hover:bg-green-700 text-white font-bold py-2 px-6 rounded-md transition duration-300">
-                            Buy Now
+                                class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 flex items-center justify-center space-x-2">
+                            <i class="fas fa-bolt"></i>
+                            <span>Buy Now</span>
                         </button>
                     </form>
                 </div>
@@ -87,22 +170,41 @@
 
         <!-- Product Details Section -->
         <div class="border-t border-gray-200 p-6">
-             <p class="text-gray-600">
-                <span class="font-semibold">Category:</span>
-                {% for category in categories %}
-                    {% if category[0] == product[1] %}
-                        {{ category[1] }}
-                    {% endif %}
-                {% endfor %}
-            </p>
-            <h2 class="text-xl font-semibold mb-4">Product Details</h2>
-            <p class="text-gray-700 mb-4">{{ product[3] }}</p>
-           
+            <!-- Category -->
+            <div class="mb-4">
+                <span class="font-semibold text-gray-700">Category:</span>
+                <span class="text-gray-600 ml-2">
+                    {% for category in categories %}
+                        {% if category[0] == product[1] %}
+                            {{ category[1] }}
+                        {% endif %}
+                    {% endfor %}
+                </span>
+            </div>
+            
+            <!-- Product Details -->
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">Product Details</h2>
+            <p class="text-gray-700 mb-4 leading-relaxed">{{ product[3] }}</p>
+            
+            <!-- Discount Information (if applicable) -->
+            {% if discount_info.has_discount %}
+            <div class="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <h3 class="font-semibold text-green-800 mb-2 flex items-center">
+                    <i class="fas fa-percentage mr-2"></i>
+                    Special Offer
+                </h3>
+                <p class="text-green-700 text-sm">
+                    This product is currently on sale! You're getting 
+                    <span class="font-bold">{{ discount_info.discount_percent|int }}% off</span> 
+                    the original price. Limited time offer!
+                </p>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
 
-<!-- JS for Quantity Control and Image Gallery -->
+<!-- JS for Quantity Control, Image Gallery, and Price Calculation -->
 <script>
 function changeQuantity(step) {
     const input = document.getElementById('quantity');
@@ -110,9 +212,21 @@ function changeQuantity(step) {
     let max = parseInt(input.max);
     let min = parseInt(input.min);
     let newValue = current + step;
+    
     if (newValue >= min && newValue <= max) {
         input.value = newValue;
+        updateTotalPrice(); // Update total price when quantity changes
     }
+}
+
+function updateTotalPrice() {
+    const quantity = parseInt(document.getElementById('quantity').value) || 1;
+    const unitPrice = {{ discount_info.discounted_price if discount_info.has_discount else product[4] }};
+    const total = unitPrice * quantity;
+    
+    // Format the total price (simple formatting without currency symbol)
+    const formattedTotal = 'रु ' + total.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    document.getElementById('totalPrice').textContent = formattedTotal;
 }
 
 function updateCartQuantity() {
@@ -141,8 +255,9 @@ function changeMainImage(imageSrc, element) {
     element.classList.add('border-primary');
 }
 
-// Initialize thumbnail selection
+// Initialize thumbnail selection and total price
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize thumbnails
     const thumbnails = document.querySelectorAll('img[onclick*="changeMainImage"]');
     thumbnails.forEach((thumb, index) => {
         thumb.classList.add('thumbnail');
@@ -152,6 +267,50 @@ document.addEventListener('DOMContentLoaded', function() {
             thumb.classList.add('border-transparent');
         }
     });
+    
+    // Initialize total price
+    updateTotalPrice();
+    
+    // Add event listener for direct quantity input
+    document.getElementById('quantity').addEventListener('input', function() {
+        updateTotalPrice();
+    });
+});
+
+// Keyboard controls for quantity
+document.addEventListener('keydown', function(e) {
+    const quantityInput = document.getElementById('quantity');
+    if (document.activeElement === quantityInput) {
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            changeQuantity(1);
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            changeQuantity(-1);
+        }
+    }
 });
 </script>
+
+<style>
+.thumbnail {
+    transition: all 0.3s ease;
+}
+
+.thumbnail:hover {
+    transform: scale(1.05);
+}
+
+#mainImage {
+    transition: transform 0.3s ease;
+}
+
+#mainImage:hover {
+    transform: scale(1.02);
+}
+
+.line-through {
+    text-decoration: line-through;
+}
+</style>
 {% endblock %}
