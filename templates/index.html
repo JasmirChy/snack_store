@@ -80,7 +80,7 @@ setInterval(nextSlide, 5000); // auto slide every 5s
                 <span class="text-primary font-bold text-xl">{{ format_currency(discount_info.discounted_price) }}</span>
                 <span class="text-gray-500 line-through text-sm">{{ format_currency(discount_info.original_price) }}</span>
             </div>
-            <p class="text-green-600 text-sm font-semibold">You save {{ format_currency(discount_info.you_save) }}</p>
+            <p class="text-green-600 text-sm font-semibold">Save {{ format_currency(discount_info.you_save) }}</p>
             {% else %}
             <p class="text-primary font-bold text-xl">{{ format_currency(product[4]) }}</p>
             {% endif %}
