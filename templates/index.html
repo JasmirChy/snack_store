@@ -48,7 +48,7 @@ setInterval(nextSlide, 5000); // auto slide every 5s
 
 <!-- Featured Products Section -->
 <section class="container mx-auto px-4 py-12 relative z-1">
-    <h2 class="text-3xl font-bold text-center mb-8">Our Products</h2>
+    <h2 class="text-3xl font-bold text-center mb-8">Featured Products</h2>
 
     <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {% for product in products %}
@@ -71,7 +71,7 @@ setInterval(nextSlide, 5000); // auto slide every 5s
         {% endif %}
     </div>
     <div class="p-4">
-        <h3 class="font-semibold text-lg mb-2">{{ product[2] }}</h3>
+        <h3 class="font-bold text-2xl mb-2">{{ product[2] }}</h3>
         
         <!-- Price Display -->
         <div class="mb-4">
@@ -136,6 +136,53 @@ setInterval(nextSlide, 5000); // auto slide every 5s
     {% endfor %}
   </div>
 </div>
+</section>
+
+<!-- Brand Story Section -->
+<section class="py-10 bg-[#fff5ca] relative z-10">
+  <div class="container mx-auto text-center">
+    <h2 class="text-2xl font-bold mb-4 text-gray-800">Our Brand Story</h2>
+    <button id="brandStoryBtn" class="bg-[#d55d21] hover:bg-[#b64a15] text-white px-6 py-2 rounded-md shadow-md transition">
+      Click here to see brand story
+    </button>
+
+    <!-- Hidden Overlay and Content -->
+    <div id="brandStoryContent" class="hidden fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+      <div class="bg-[#fffae1] rounded-lg shadow-lg w-[90%] sm:w-[600px] max-h-[70vh] overflow-y-auto p-6 relative">
+        <h3 class="text-xl font-bold mb-4 text-[#d55d21]">
+                SwadGaLLi<br>
+          जहाँ नेपाली स्वाद कहानी बन्छ</h3>
+        <p class="text-gray-700 leading-relaxed">
+<br>
+
+(Authentic Taste. Handcrafted with Heart.)
+<br><br>
+In every Nepali home, there’s a street, a galli, filled with memories.
+It’s where aama fries thekua golden before festivals,
+where baje breaks khurma during tea-time stories,
+and where children wait for their share of khajhuri after school.
+<br><br>
+That’s where SwadGaLLi was born,
+not in a factory, but in the heart of those moments.
+<br><br>
+At SwadGaLLi, we believe taste isn’t just about ingredients,
+it’s about sambandha (connection), parampara (tradition), and maya (love).
+Every piece of our Thekua, Khurma, and Khajhuri is handmade,
+using age-old recipes passed down through Nepali kitchens,
+crafted with the same patience and pride that once filled our festivals and family gatherings.
+<br><br>
+We’re here to keep those flavors alive 
+to bring the warmth of home to every corner,
+and remind us that true taste never fades — it travels.
+<br><br>
+Because SwadGaLLi isn’t just a snack brand 
+it’s the taste of ghar, packed with heritage, honesty, and heart.
+<br><br>
+SwadGaLLi — जहाँ नेपाली स्वाद कहानी बन्छ |
+(Where Nepali taste tells its story.)        </p>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- Features Section -->
@@ -253,6 +300,27 @@ document.addEventListener("DOMContentLoaded", function() {
         showProducts();
     });
 });
+
+<!-- Script for Brand Story Modal -->
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("brandStoryBtn");
+  const content = document.getElementById("brandStoryContent");
+
+  // Show content
+  btn.addEventListener("click", () => {
+    content.classList.remove("hidden");
+  });
+
+  // Hide when clicked outside content box
+  content.addEventListener("click", (e) => {
+    if (e.target === content) {
+      content.classList.add("hidden");
+    }
+  });
+});
+
+
 </script>
+
 
 {% endblock %}

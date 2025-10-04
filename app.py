@@ -47,7 +47,7 @@ def send_customer_order_placed_email(to_email, customer_name, order_id, product_
     sender_email = "info.swadgalli@gmail.com"
     sender_password = "chfy qktf tnuz esgl"  # Gmail app password
 
-    subject = f"Your Order #{order_id} has been placed successfully!"
+    subject = f"Your New Order with oeder id #{order_id} has been placed successfully!"
     products_list = ", ".join(product_names)
 
     body = f"""
