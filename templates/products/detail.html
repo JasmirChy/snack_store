@@ -20,7 +20,7 @@
                     <img id="mainImage" 
                          src="{{ url_for('static', filename='uploads/products/' + (product_images[0][2] if product_images else 'default-product.jpg')) }}" 
                          alt="{{ product[2] }}" 
-                         class="w-full h-96 object-cover transition-transform duration-300 rounded-lg">
+                         class="w-full h-80 object-cover transition-transform duration-300 rounded-lg">
                 </div>
                 
                 <!-- Thumbnail Images -->
@@ -38,7 +38,7 @@
 
             <!-- Product Info -->
             <div class="md:w-1/2 p-6">
-                <h1 class="text-3xl font-bold mb-4">{{ product[2] }}</h1>
+                <h1 class="text-2xl font-semibold mb-4">{{ product[2] }}</h1>
                 
                 <!-- Price Display with Discount -->
                 <div class="mb-6">
@@ -46,11 +46,11 @@
                     <div class="space-y-3">
                         <!-- Discounted Price -->
                         <div class="flex items-center space-x-4">
-                            <span class="text-3xl text-red-600 font-bold">
+                            <span class="text-2xl text-red-600 font-bold">
                                 {{ format_currency(discount_info.discounted_price) }}
                             </span>
                             <!-- Original Price -->
-                            <span class="text-xl text-gray-500 line-through">
+                            <span class="text-lg text-gray-500 line-through">
                                 {{ format_currency(discount_info.original_price) }}
                             </span>
                         </div>
@@ -63,6 +63,7 @@
                             <span class="text-green-600 text-sm font-semibold bg-green-50 px-2 py-1 rounded">
                                 You save {{ format_currency(discount_info.you_save) }}
                             </span>
+                            <br> <p class="text-red-600"> Flash sale ending soon ⭐ </p>
                         </div>
                         
                         <!-- Effective Discount Rate -->

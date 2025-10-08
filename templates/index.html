@@ -50,56 +50,60 @@ setInterval(nextSlide, 5000); // auto slide every 5s
 <section class="container mx-auto px-4 py-12 relative z-1">
     <h2 class="text-3xl font-bold text-center mb-8">Featured Products</h2>
 
-    <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {% for product in products %}
-        <!-- Update the product item in index.html -->
-<div class="product-item bg-[#fffae1] rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 cursor-pointer clickable-product"
-     onclick="window.location='{{ url_for('product_detail', product_id=product[0]) }}'">
-    <div class="relative">
-        {% set primary_image = get_primary_image(product[0]) %}
-        <img src="{{ url_for('static', filename='uploads/products/' + primary_image) if primary_image else url_for('static', filename='images/default-product.jpg') }}" 
-             alt="{{ product[2] }}" 
-             class="w-full h-48 object-cover">
-        {% if product[5] == 0 %}
-        <span class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs">Out of Stock</span>
-        {% endif %}
-        {% set discount_info = get_discount_info(product) %}
-        {% if discount_info.has_discount %}
-        <span class="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-            -{{ discount_info.discount_percent|int }}% OFF
-        </span>
-        {% endif %}
-    </div>
-    <div class="p-4">
-        <h3 class="font-bold text-2xl mb-2">{{ product[2] }}</h3>
-        
-        <!-- Price Display -->
-        <div class="mb-4">
-            {% if discount_info.has_discount %}
-            <div class="flex items-center space-x-2">
-                <span class="text-primary font-bold text-xl">{{ format_currency(discount_info.discounted_price) }}</span>
-                <span class="text-gray-500 line-through text-sm">{{ format_currency(discount_info.original_price) }}</span>
-            </div>
-            <p class="text-green-600 text-sm font-semibold">Save {{ format_currency(discount_info.you_save) }}</p>
-            {% else %}
-            <p class="text-primary font-bold text-xl">{{ format_currency(product[4]) }}</p>
-            {% endif %}
-        </div>
-        
-        <div class="flex justify-between items-center">
-            <span class="text-primary hover:text-blue-700 font-semibold">View Details</span>
-            {% if product[5] > 0 %}
-            <form action="{{ url_for('add_to_cart') }}" method="POST" onclick="event.stopPropagation()">
-                <input type="hidden" name="product_id" value="{{ product[0] }}">
-                <input type="hidden" name="quantity" value="1">
-                <button type="submit" class="bg-primary hover:bg-blue-700 text-white px-3 py-1 rounded-full transition duration-300">
-                    <i class="fas fa-cart-plus"></i>
-                </button>
-            </form>
-            {% endif %}
-        </div>
-    </div>
-</div>
+      <div class="product-item bg-[#fff5ca] rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 cursor-pointer clickable-product"
+          onclick="window.location='{{ url_for('product_detail', product_id=product[0]) }}'">
+          <div class="relative">
+              {% set primary_image = get_primary_image(product[0]) %}
+              <img src="{{ url_for('static', filename='uploads/products/' + primary_image) if primary_image else url_for('static', filename='images/default-product.jpg') }}" 
+                  alt="{{ product[2] }}" 
+                  class="w-full h-36 object-cover">
+              {% if product[5] == 0 %}
+              <span class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs">Out of Stock</span>
+              {% endif %}
+              {% set discount_info = get_discount_info(product) %}
+              {% if discount_info.has_discount %}
+              <span class="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                  -{{ discount_info.discount_percent|int }}% OFF
+              </span>
+              {% endif %}
+          </div>
+          <div class="p-3">
+              <h3 class="font-semibold text-md mb-1">{{ product[2] }}</h3>
+              
+              <!-- Price Display -->
+              <div class="mb-2">
+                  {% if discount_info.has_discount %}
+                  <!-- <div class="flex flex-col space-x-2">
+                    <span class="text-gray-500 line-through text-sm">{{ format_currency(discount_info.original_price) }}</span>
+                    
+                    <span class="text-primary  font-bold text-sm">{{ format_currency(discount_info.discounted_price) }}</span>
+                  </div> -->
+                  <div class="flex flex-row items-center space-x-2">
+                      <span class="text-primary font-bold text-sm">{{ format_currency(discount_info.discounted_price) }}</span>
+                      <span class="text-gray-500 line-through text-xs">{{ format_currency(discount_info.original_price) }}</span>
+                  </div>
+                  <p class="text-green-600 text-sm font-semibold">Save {{ format_currency(discount_info.you_save) }} </p>
+                  {% else %}
+                  <p class="text-primary font-bold text-md">{{ format_currency(product[4]) }}</p>
+                  {% endif %}
+              </div>
+              
+              <!-- <div class="flex justify-between items-center">
+                  <span class="text-primary hover:text-blue-700 font-semibold">View Details</span>
+                  {% if product[5] > 0 %}
+                  <form action="{{ url_for('add_to_cart') }}" method="POST" onclick="event.stopPropagation()">
+                      <input type="hidden" name="product_id" value="{{ product[0] }}">
+                      <input type="hidden" name="quantity" value="1">
+                      <button type="submit" class="bg-primary hover:bg-blue-700 text-white px-3 py-1 rounded-full transition duration-300">
+                          <i class="fas fa-cart-plus"></i>
+                      </button>
+                  </form>
+                  {% endif %}
+              </div> -->
+          </div>
+      </div>
         {% endfor %}
     </div>
 
@@ -111,36 +115,37 @@ setInterval(nextSlide, 5000); // auto slide every 5s
 
 <!-- Customer Reviews Section -->
 <section class="py-10 bg-[#fff5ca] relative z-1">
- <div class="bg-[#fffae1] rounded-lg shadow-md p-6 mb-8 relative">
-  <h2 class="text-2xl font-bold text-center mb-6">Customer Reviews</h2>
+  <div class="bg-[#fff5ca] rounded-lg  p-6 mb-8 relative">
+    <h2 class="text-2xl font-bold text-center mb-6">Customer Reviews</h2>
 
-  <button id="scrollLeft" class="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-700 text-white rounded-full p-2 shadow hover:bg-gray-900">&#8592;</button>
-  <button id="scrollRight" class="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-700 text-white rounded-full p-2 shadow hover:bg-gray-900">&#8594;</button>
+    <button id="scrollLeft" class="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-700 text-white rounded-full p-2 shadow hover:bg-gray-900">&#8592;</button>
+    <button id="scrollRight" class="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-700 text-white rounded-full p-2 shadow hover:bg-gray-900">&#8594;</button>
 
-  <div id="reviewContainer" class="flex space-x-6 overflow-x-auto scroll-smooth pb-4">
-    {% for review in reviews %}
-      <div class="min-w-[300px] sm:min-w-[400px] bg-white rounded-lg shadow-md overflow-hidden">
-        {% if review[1] == 'image' %}
-          <img src="{{ url_for('static', filename=review[2]) }}" class="w-full h-64 object-cover">
-        {% elif review[1] == 'video' %}
-          <video class="w-full h-64 object-cover review-video" autoplay muted loop playsinline controlslist="nodownload">
-            <source src="{{ url_for('static', filename=review[2]) }}" type="video/mp4">
-          </video>
-          <div class="flex justify-center py-2">
-            <button class="toggle-sound bg-blue-500 text-white px-3 py-1 rounded-md">Unmute</button>
-          </div>
-        {% endif %}
-      </div>
-    {% else %}
-      <p class="text-gray-500 text-center">No reviews yet.</p>
-    {% endfor %}
+    <div id="reviewContainer" class="flex space-x-6 overflow-x-auto scroll-smooth pb-4">
+      {% for review in reviews %}
+        <div class="min-w-[300px] sm:min-w-[400px] bg-[#fff5ca] rounded-lg shadow-md overflow-hidden">
+          {% if review[1] == 'image' %}
+            <img src="{{ url_for('static', filename=review[2]) }}" class="w-full h-64 object-cover">
+          {% elif review[1] == 'video' %}
+            <video class="w-full h-64 object-cover review-video" autoplay muted loop playsinline controlslist="nodownload">
+              <source src="{{ url_for('static', filename=review[2]) }}" type="video/mp4">
+            </video>
+            <div class="flex justify-center py-2">
+              <button class="toggle-sound bg-blue-500 text-white px-3 py-1 rounded-md">Unmute</button>
+            </div>
+          {% endif %}
+        </div>
+      {% else %}
+        <p class="text-gray-500 text-center">No reviews yet.</p>
+      {% endfor %}
+    </div>
   </div>
-</div>
 </section>
 
 <!-- Brand Story Section -->
+<!-- Brand Story Section -->
 <section class="py-10 bg-[#fff5ca] relative z-10">
-  <div class="container mx-auto text-center">
+  <div class="container mx-auto text-center border-2 border-primary rounded-3xl p-8 bg-[#fff5ca] shadow-sm">
     <h2 class="text-2xl font-bold mb-4 text-gray-800">Our Brand Story</h2>
     <button id="brandStoryBtn" class="bg-[#d55d21] hover:bg-[#b64a15] text-white px-6 py-2 rounded-md shadow-md transition">
       Click here to see brand story
@@ -150,75 +155,82 @@ setInterval(nextSlide, 5000); // auto slide every 5s
     <div id="brandStoryContent" class="hidden fixed inset-0 bg-black/50 flex justify-center items-center z-50">
       <div class="bg-[#fffae1] rounded-lg shadow-lg w-[90%] sm:w-[600px] max-h-[70vh] overflow-y-auto p-6 relative">
         <h3 class="text-xl font-bold mb-4 text-[#d55d21]">
-                SwadGaLLi<br>
-          जहाँ नेपाली स्वाद कहानी बन्छ</h3>
+          SwadGaLLi<br>
+          जहाँ नेपाली स्वाद कहानी बन्छ
+        </h3>
         <p class="text-gray-700 leading-relaxed">
-<br>
-
-(Authentic Taste. Handcrafted with Heart.)
-<br><br>
-In every Nepali home, there’s a street, a galli, filled with memories.
-It’s where aama fries thekua golden before festivals,
-where baje breaks khurma during tea-time stories,
-and where children wait for their share of khajhuri after school.
-<br><br>
-That’s where SwadGaLLi was born,
-not in a factory, but in the heart of those moments.
-<br><br>
-At SwadGaLLi, we believe taste isn’t just about ingredients,
-it’s about sambandha (connection), parampara (tradition), and maya (love).
-Every piece of our Thekua, Khurma, and Khajhuri is handmade,
-using age-old recipes passed down through Nepali kitchens,
-crafted with the same patience and pride that once filled our festivals and family gatherings.
-<br><br>
-We’re here to keep those flavors alive 
-to bring the warmth of home to every corner,
-and remind us that true taste never fades — it travels.
-<br><br>
-Because SwadGaLLi isn’t just a snack brand 
-it’s the taste of ghar, packed with heritage, honesty, and heart.
-<br><br>
-SwadGaLLi — जहाँ नेपाली स्वाद कहानी बन्छ |
-(Where Nepali taste tells its story.)        </p>
+          <br>
+          (Authentic Taste. Handcrafted with Heart.)
+          <br><br>
+          In every Nepali home, there's a street, a galli, filled with memories.
+          It's where aama fries thekua golden before festivals,
+          where baje breaks khurma during tea-time stories,
+          and where children wait for their share of khajhuri after school.
+          <br><br>
+          That's where SwadGaLLi was born,
+          not in a factory, but in the heart of those moments.
+          <br><br>
+          At SwadGaLLi, we believe taste isn't just about ingredients,
+          it's about sambandha (connection), parampara (tradition), and maya (love).
+          Every piece of our Thekua, Khurma, and Khajhuri is handmade,
+          using age-old recipes passed down through Nepali kitchens,
+          crafted with the same patience and pride that once filled our festivals and family gatherings.
+          <br><br>
+          We're here to keep those flavors alive 
+          to bring the warmth of home to every corner,
+          and remind us that true taste never fades — it travels.
+          <br><br>
+          Because SwadGaLLi isn't just a snack brand 
+          it's the taste of ghar, packed with heritage, honesty, and heart.
+          <br><br>
+          SwadGaLLi — जहाँ नेपाली स्वाद कहानी बन्छ |
+          (Where Nepali taste tells its story.)
+        </p>
       </div>
     </div>
   </div>
 </section>
 
 <!-- Features Section -->
-<section class="bg-[#e6dbac] py-12 relative z-1">
+<!-- Features Section -->
+<section class="bg-[#fff5ca] py-12 relative z-1">
     <div class="container mx-auto px-4">
-        <h2 class="text-3xl font-bold text-center mb-12 text-gray-800">What We Stand For</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="text-center">
+        <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">What We Stand For</h2>
+        <div class="flex md:grid md:grid-cols-3 gap-4 md:gap-8 overflow-x-auto pb-4 md:pb-0 scrollbar-hide">
+            <!-- Feature 1 -->
+            <div class="flex-shrink-0 w-80 md:w-auto border-2 border-primary rounded-3xl p-6 bg-[#fff5ca] shadow-sm">
                 <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-history text-white text-2xl"></i>
                 </div>
-                <h3 class="text-xl font-semibold mb-2">Sustaining Heritage</h3>
-                <p class="text-gray-600">We use sustainable practices to honor the land and cultural traditions of Nepal, preserving the authentic, traditional foods you love.</p>
+                <h3 class="text-xl text-center font-semibold mb-2">Sustaining Heritage</h3>
+                <p class="text-gray-600 text-sm md:text-base">We use sustainable practices to honor the land and cultural traditions of Nepal, preserving the authentic, traditional foods you love.</p>
             </div>
-            <div class="text-center">
+            
+            <!-- Feature 2 -->
+            <div class="flex-shrink-0 w-80 md:w-auto border-2 border-primary rounded-3xl p-6 bg-[#fff5ca] shadow-sm">
                 <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-award text-white text-2xl"></i>
                 </div>
-                <h3 class="text-xl font-semibold mb-2">Quality</h3>
-                <p class="text-gray-600">We use the finest local ingredients and time-honored techniques to ensure every bite delivers the authentic taste of Nepal.</p>
+                <h3 class="text-xl text-center font-semibold mb-2">Quality</h3>
+                <p class="text-gray-600 text-sm md:text-base">We use the finest local ingredients and time-honored techniques to ensure every bite delivers the authentic taste of Nepal.</p>
             </div>
-            <div class="text-center">
+            
+            <!-- Feature 3 -->
+            <div class="flex-shrink-0 w-80 md:w-auto border-2 border-primary rounded-3xl p-6 bg-[#fff5ca] shadow-sm">
                 <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-heart text-white text-2xl"></i>
                 </div>
-                <h3 class="text-xl font-semibold mb-2">Health</h3>
-                <p class="text-gray-600">Our traditional snacks nourish both body and soul, made with simple, wholesome ingredients.</p>
+                <h3 class="text-xl text-center font-semibold mb-2">Health</h3>
+                <p class="text-gray-600 text-sm md:text-base">Our traditional snacks nourish both body and soul, made with simple, wholesome ingredients.</p>
             </div>
         </div>
     </div>
 </section><br>
 
-<section class="bg-[#ecd59a] py-12 relative z-1">
+<section class="bg-[#fff5ca] py-12 relative z-1">
   <div class="container mx-auto px-4">
     <div class="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-8 justify-items-center">
-      <div class="text-center max-w-2xl">
+      <div class="text-center max-w-2xl border-2 border-primary rounded-3xl p-8 bg-[#fff5ca] shadow-sm">
         <h2 class="text-xl font-bold mb-4 text-red-800">Our Mission</h2>        
         <p class="text-gray-700 leading-relaxed">
           Our mission is to lovingly craft and share the authentic flavors of Nepal's

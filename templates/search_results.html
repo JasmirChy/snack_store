@@ -1,29 +1,129 @@
 {% extends "base.html" %}
+
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-  <h1 class="text-2xl font-bold mb-4">
-    Search results for "{{ query }}"
-  </h1>
-
-  {% if results %}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {% for product in results %}
-        <div class="bg-white rounded-lg shadow p-4">
-          <img src="{{ url_for('static', filename='uploads/products/' + product[6]) if product[6] else 'https://via.placeholder.com/300' }}" 
-               alt="{{ product[2] }}" 
-               class="w-full h-48 object-cover mb-2 rounded">
-          <h2 class="font-semibold text-lg">{{ product[2] }}</h2>
-          <p class="text-gray-600">{{ product[3][:80] }}...</p>
-          <p class="font-bold text-primary">{{ format_currency(product[4]) }}</p>
-          <a href="{{ url_for('product_detail', product_id=product[0]) }}" 
-             class="inline-block mt-2 text-white bg-primary px-4 py-2 rounded">
-             View
-          </a>
+    <h1 class="text-3xl font-bold mb-8">Search Results for "{{ query }}"</h1>
+    
+    {% if results %}
+    <!-- Product Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {% for product in results %}
+        <div class="bg-[#fffae1] rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 cursor-pointer clickable-product" 
+             onclick="window.location='{{ url_for('product_detail', product_id=product[0]) }}'">
+            <div class="relative">
+                {% set primary_image = get_primary_image(product[0]) %}
+                <img src="{{ url_for('static', filename='uploads/products/' + primary_image) if primary_image else url_for('static', filename='images/default-product.jpg') }}" 
+                     alt="{{ product[2] }}" 
+                     class="w-full h-48 object-cover">
+                {% if product[5] == 0 %}
+                <span class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs">Out of Stock</span>
+                {% endif %}
+                {% set discount_info = get_discount_info(product) %}
+                {% if discount_info.has_discount %}
+                <span class="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                    -{{ discount_info.discount_percent|int }}% OFF
+                </span>
+                {% endif %}
+            </div>
+            <div class="p-4">
+                <h3 class="font-semibold text-xl mb-2">{{ product[2] }}</h3>
+                
+                <!-- Price Display -->
+                <div class="mb-4">
+                    {% if discount_info.has_discount %}
+                    <div class="space-y-1">
+                        <div class="flex flex-col">
+                            <span class="text-gray-500 line-through text-sm">{{ format_currency(discount_info.original_price) }}</span>
+                            <span class="text-primary font-bold text-sm">{{ format_currency(discount_info.discounted_price) }}</span>
+                        </div>
+                        <p class="text-green-600 text-sm font-semibold">Save {{ format_currency(discount_info.you_save) }} <br> <p class="text-red-600"> Flash sale ending soon ⭐ </p></p>
+                    </div>
+                    {% else %}
+                    <p class="text-primary font-bold text-ll">{{ format_currency(product[4]) }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-primary hover:text-blue-700 font-semibold">View Details</span>
+                    {% if product[5] > 0 %}
+                    <form action="{{ url_for('add_to_cart') }}" method="POST" onclick="event.stopPropagation()">
+                        <input type="hidden" name="product_id" value="{{ product[0] }}">
+                        <input type="hidden" name="quantity" value="1">
+                        <button type="submit" 
+                                class="bg-primary hover:bg-blue-700 text-white px-3 py-1 rounded-full transition duration-300">
+                            <i class="fas fa-cart-plus"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
         </div>
-      {% endfor %}
+        {% endfor %}
     </div>
-  {% else %}
-    <p class="text-gray-600">No products found.</p>
-  {% endif %}
+    
+    {% else %}
+    <div class="text-center py-12">
+        <p class="text-gray-500 text-lg">No products found for "{{ query }}".</p>
+        <a href="{{ url_for('products') }}" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md mt-4 inline-block transition duration-300">
+            Browse All Products
+        </a>
+    </div>
+    {% endif %}
 </div>
+
+<style>
+.cursor-pointer {
+    cursor: pointer;
+}
+.cursor-pointer:hover {
+    transform: translateY(-5px);
+    transition: transform 0.3s ease;
+}
+
+.clickable-product:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.line-through {
+    text-decoration: line-through;
+}
+</style>
+
+<!-- JavaScript for smooth interactions -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add loading states for buttons
+    const addToCartButtons = document.querySelectorAll('form[action="{{ url_for("add_to_cart") }}"] button');
+    
+    addToCartButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            this.disabled = true;
+            
+            // Revert after 2 seconds if still processing
+            setTimeout(() => {
+                this.innerHTML = originalText;
+                this.disabled = false;
+            }, 2000);
+        });
+    });
+    
+    // Add pulse animation to discounted products
+    const discountedProducts = document.querySelectorAll('.clickable-product');
+    discountedProducts.forEach(product => {
+        const hasDiscount = product.querySelector('.bg-red-500');
+        if (hasDiscount) {
+            product.style.border = '2px solid transparent';
+            product.addEventListener('mouseenter', function() {
+                this.style.border = '2px solid #ef4444';
+            });
+            product.addEventListener('mouseleave', function() {
+                this.style.border = '2px solid transparent';
+            });
+        }
+    });
+});
+</script>
 {% endblock %}
