@@ -47,7 +47,7 @@ def send_customer_order_placed_email(to_email, customer_name, order_id, product_
     sender_email = "info.swadgalli@gmail.com"
     sender_password = "chfy qktf tnuz esgl"  # Gmail app password
 
-    subject = f"Your New Order with oeder id #{order_id} has been placed successfully!"
+    subject = f"Your New Order with order id #{order_id} has been placed successfully!"
     products_list = ", ".join(product_names)
 
     body = f"""
@@ -1270,25 +1270,33 @@ def user_order_detail(order_id):
     if order[3] == 'online' and order[5]:
         payment_proof_url = url_for('static', filename='uploads/payment_proofs/' + order[5])
 
-    # ✅ Fetch order items with product image
+    # Fetch order items with product info
     cursor.execute("""
-        SELECT p.title, oi.quantity, oi.unit_price, p.image
+        SELECT p.title, oi.quantity, oi.unit_price, p.id as product_id
         FROM order_items oi
         JOIN products p ON oi.product_id = p.id
         WHERE oi.order_id = %s
     """, (order_id,))
-    items = cursor.fetchall()
+    items_data = cursor.fetchall()
 
-    # ✅ Build proper URLs for product image
-    items = [
-    {
-        "title": i[0],
-        "quantity": i[1],
-        "unit_price": float(i[2]),
-        "image": url_for('static', filename='uploads/products/' + i[3]) if i[3] else url_for('static', filename='images/no-image.png')
-    }
-    for i in items
-    ]
+    # Build items with proper image handling
+    items = []
+    for item in items_data:
+        title, quantity, unit_price, product_id = item
+        
+        # Get primary image for the product
+        primary_image = get_primary_image(product_id)
+        if primary_image:
+            image_url = url_for('static', filename='uploads/products/' + primary_image)
+        else:
+            image_url = url_for('static', filename='images/default-product.jpg')
+        
+        items.append({
+            "title": title,
+            "quantity": quantity,
+            "unit_price": float(unit_price),
+            "image": image_url
+        })
 
     # Order tracking steps
     steps = [
@@ -1313,7 +1321,6 @@ def user_order_detail(order_id):
         current_index=current_index,
         payment_proof_url=payment_proof_url
     )
-
 @app.route('/upload_payment_proof/<int:order_id>', methods=['POST'])
 @login_required
 def upload_payment_proof(order_id):
@@ -1710,6 +1717,7 @@ def admin_edit_product(product_id):
     cur.close()
     
     return render_template('admin/product_form.html', product=product, categories=categories, product_images=product_images)
+
 @app.route('/admin/products/delete/<int:product_id>')
 @login_required
 def admin_delete_product(product_id):

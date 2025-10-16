@@ -47,8 +47,8 @@ setInterval(nextSlide, 5000); // auto slide every 5s
 </style>
 
 <!-- Featured Products Section -->
-<section class="container mx-auto px-4 py-12 relative z-1">
-    <h2 class="text-3xl font-bold text-center mb-8">Featured Products</h2>
+<section class="container mx-auto px-4 py-6 relative z-1">
+    <h2 class="text-xl font-semibold text-center mb-8">Featured Products</h2>
 
     <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {% for product in products %}
@@ -114,8 +114,9 @@ setInterval(nextSlide, 5000); // auto slide every 5s
 </section>
 
 <!-- Customer Reviews Section -->
+<!-- Customer Reviews Section -->
 <section class="py-10 bg-[#fff5ca] relative z-1">
-  <div class="bg-[#fff5ca] rounded-lg  p-6 mb-8 relative">
+  <div class="bg-[#fff5ca] rounded-lg p-6 mb-8 relative">
     <h2 class="text-2xl font-bold text-center mb-6">Customer Reviews</h2>
 
     <button id="scrollLeft" class="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-700 text-white rounded-full p-2 shadow hover:bg-gray-900">&#8592;</button>
@@ -123,11 +124,11 @@ setInterval(nextSlide, 5000); // auto slide every 5s
 
     <div id="reviewContainer" class="flex space-x-6 overflow-x-auto scroll-smooth pb-4">
       {% for review in reviews %}
-        <div class="min-w-[300px] sm:min-w-[400px] bg-[#fff5ca] rounded-lg shadow-md overflow-hidden">
+        <div class="min-w-[200px] sm:min-w-[250px] bg-[#fff5ca] rounded-lg shadow-md overflow-hidden">
           {% if review[1] == 'image' %}
-            <img src="{{ url_for('static', filename=review[2]) }}" class="w-full h-64 object-cover">
+            <img src="{{ url_for('static', filename=review[2]) }}" class="w-full h-[355px] object-cover">
           {% elif review[1] == 'video' %}
-            <video class="w-full h-64 object-cover review-video" autoplay muted loop playsinline controlslist="nodownload">
+            <video class="w-full h-[355px] object-cover review-video" autoplay muted loop playsinline controlslist="nodownload">
               <source src="{{ url_for('static', filename=review[2]) }}" type="video/mp4">
             </video>
             <div class="flex justify-center py-2">
@@ -242,6 +243,7 @@ setInterval(nextSlide, 5000); // auto slide every 5s
   </div>
 </section>
 <!-- JavaScript for Reviews Scroll & Toggle Sound -->
+<!-- JavaScript for Reviews Scroll & Toggle Sound -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const container = document.getElementById("reviewContainer");
@@ -252,21 +254,59 @@ document.addEventListener("DOMContentLoaded", () => {
     container.scrollBy({ left: 400, behavior: "smooth" });
   });
 
+  // Track the currently unmuted video
+  let currentlyUnmutedVideo = null;
+
   document.querySelectorAll(".toggle-sound").forEach((btn) => {
     btn.addEventListener("click", () => {
       const video = btn.closest("div").previousElementSibling;
-      if(video.muted){
-        video.muted = false;
-        btn.textContent = "Mute";
-        btn.classList.remove("bg-blue-500");
-        btn.classList.add("bg-red-500");
-      } else {
+      
+      // If clicking on a video that's already unmuted, mute it
+      if (video === currentlyUnmutedVideo) {
         video.muted = true;
         btn.textContent = "Unmute";
         btn.classList.remove("bg-red-500");
         btn.classList.add("bg-blue-500");
+        currentlyUnmutedVideo = null;
+      } 
+      // If clicking on a muted video
+      else {
+        // Mute the previously unmuted video if exists
+        if (currentlyUnmutedVideo) {
+          const previousBtn = currentlyUnmutedVideo.nextElementSibling.querySelector('.toggle-sound');
+          currentlyUnmutedVideo.muted = true;
+          previousBtn.textContent = "Unmute";
+          previousBtn.classList.remove("bg-red-500");
+          previousBtn.classList.add("bg-blue-500");
+        }
+        
+        // Unmute the current video
+        video.muted = false;
+        btn.textContent = "Mute";
+        btn.classList.remove("bg-blue-500");
+        btn.classList.add("bg-red-500");
+        currentlyUnmutedVideo = video;
       }
     });
+  });
+
+  // Optional: Auto-mute when video goes out of view
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting && entry.target === currentlyUnmutedVideo) {
+        const btn = entry.target.nextElementSibling.querySelector('.toggle-sound');
+        entry.target.muted = true;
+        btn.textContent = "Unmute";
+        btn.classList.remove("bg-red-500");
+        btn.classList.add("bg-blue-500");
+        currentlyUnmutedVideo = null;
+      }
+    });
+  }, { threshold: 0.5 });
+
+  // Observe all review videos
+  document.querySelectorAll('.review-video').forEach(video => {
+    observer.observe(video);
   });
 });
 </script>

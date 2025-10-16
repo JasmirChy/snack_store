@@ -235,7 +235,8 @@ function changeQuantity(step) {
 
 function updateTotalPrice() {
     const quantity = parseInt(document.getElementById('quantity').value) || 1;
-    const unitPrice = {{ discount_info.discounted_price if discount_info.has_discount else product[4] }};
+    <!-- const unitPrice = {{ discount_info.discounted_price if discount_info.has_discount else product[4] }}; -->
+    const unitPrice = parseFloat("{{ discount_info.discounted_price if discount_info.has_discount else product[4] }}");
     const total = unitPrice * quantity;
     const formattedTotal = 'रु ' + total.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
     document.getElementById('totalPrice').textContent = formattedTotal;
